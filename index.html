@@ -1,0 +1,1579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TransitionSmart · SOP Review Studio</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    height: 100%;
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #f3f2f1;
+    color: #201f1e;
+    overflow: hidden;
+  }
+  button { font-family: inherit; cursor: pointer; }
+  input, textarea { font-family: inherit; }
+
+  /* ═══════════════════════════════════════════════
+     LANDING VIEW
+  ═══════════════════════════════════════════════ */
+  #landing-view {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(135deg,#f8fafc 0%,#e0f2fe 100%);
+    overflow-y: auto;
+  }
+  .landing-top {
+    padding: 22px 44px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #e2e8f0;
+    background: #ffffff;
+  }
+  .landing-brand { display: flex; align-items: center; gap: 14px; }
+  .landing-brand img { height: 20px; filter: brightness(0.2); }
+  .landing-brand .divider { color: #cbd5e1; }
+  .landing-brand .product {
+    font-size: 13px; letter-spacing: 3px; font-weight: 700;
+    color: #185ABD; text-transform: uppercase;
+  }
+  .landing-help {
+    font-size: 12px; color: #64748b;
+  }
+  .landing-help a { color: #185ABD; text-decoration: none; margin-left: 12px; }
+
+  .landing-hero {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 24px;
+  }
+  .landing-card {
+    max-width: 760px; width: 100%;
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(15,23,42,0.10);
+    padding: 48px 56px;
+    text-align: center;
+  }
+  .landing-eyebrow {
+    font-size: 11px; letter-spacing: 3px; text-transform: uppercase;
+    color: #185ABD; font-weight: 700; margin-bottom: 14px;
+  }
+  .landing-title {
+    font-size: 34px; font-weight: 700; color: #0F172A;
+    letter-spacing: -0.5px; margin-bottom: 14px; line-height: 1.15;
+  }
+  .landing-subtitle {
+    font-size: 15px; color: #475569; max-width: 500px; margin: 0 auto 36px;
+    line-height: 1.6;
+  }
+
+  .drop-zone {
+    border: 2px dashed #94a3b8;
+    border-radius: 12px;
+    padding: 40px 24px;
+    background: #f8fafc;
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+  .drop-zone:hover, .drop-zone.dragover {
+    border-color: #185ABD;
+    background: #eff6ff;
+  }
+  .drop-icon {
+    width: 56px; height: 56px; margin: 0 auto 16px;
+    background: linear-gradient(135deg,#185ABD,#2B7CD3);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 26px;
+    box-shadow: 0 8px 20px rgba(24,90,189,0.25);
+  }
+  .drop-title {
+    font-size: 17px; font-weight: 600; color: #0F172A; margin-bottom: 6px;
+  }
+  .drop-subtitle {
+    font-size: 13px; color: #64748b;
+  }
+  .drop-subtitle b { color: #185ABD; }
+
+  .landing-options {
+    margin-top: 28px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  .option-card {
+    padding: 16px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: #ffffff;
+    text-align: left;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .option-card:hover { border-color: #185ABD; background: #f0f9ff; }
+  .option-icon {
+    width: 34px; height: 34px; flex-shrink: 0;
+    background: #f1f5f9; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+  .option-title {
+    font-size: 13px; font-weight: 600; color: #0F172A; margin-bottom: 2px;
+  }
+  .option-desc {
+    font-size: 11px; color: #64748b; line-height: 1.4;
+  }
+
+  .landing-features {
+    max-width: 760px; margin: 40px auto 40px;
+    display: grid; grid-template-columns: repeat(4,1fr);
+    gap: 12px;
+  }
+  .feature-pill {
+    background: rgba(255,255,255,0.7);
+    padding: 12px;
+    border-radius: 10px;
+    text-align: center;
+    border: 1px solid #e2e8f0;
+  }
+  .feature-pill .icon { font-size: 18px; margin-bottom: 6px; }
+  .feature-pill .label {
+    font-size: 11px; color: #475569; font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+
+  /* ═══════════════════════════════════════════════
+     EDITOR VIEW
+  ═══════════════════════════════════════════════ */
+  #editor-view {
+    display: none;
+    height: 100vh;
+    flex-direction: column;
+    background: #faf9f8;
+  }
+
+  /* Title bar (Word-like) */
+  .titlebar {
+    background: #185ABD;
+    color: #ffffff;
+    padding: 6px 14px;
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 12px;
+    -webkit-user-select: none; user-select: none;
+  }
+  .titlebar-left { display: flex; align-items: center; gap: 10px; }
+  .titlebar img.logo { height: 14px; filter: brightness(0) invert(1); }
+  .titlebar .divider { color: rgba(255,255,255,0.4); }
+  .titlebar .doc-name { font-weight: 600; }
+  .titlebar .save-indicator {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: rgba(255,255,255,0.15); padding: 2px 8px; border-radius: 10px;
+    font-size: 11px;
+  }
+  .titlebar .save-indicator .dot {
+    width: 6px; height: 6px; border-radius: 50%; background: #86efac;
+  }
+  .titlebar-right { display: flex; align-items: center; gap: 12px; }
+  .titlebar .avatar {
+    width: 24px; height: 24px; border-radius: 50%;
+    background: linear-gradient(135deg,#f97316,#ea580c);
+    color: #fff; font-size: 10px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    border: 1.5px solid rgba(255,255,255,0.3);
+  }
+  .titlebar-btn {
+    background: transparent; border: none; color: #ffffff;
+    font-size: 14px; padding: 3px 8px; border-radius: 4px;
+    line-height: 1;
+  }
+  .titlebar-btn:hover { background: rgba(255,255,255,0.15); }
+
+  /* Ribbon */
+  .ribbon-tabs {
+    background: #ffffff;
+    padding: 0 14px;
+    display: flex; align-items: center;
+    border-bottom: 1px solid #edebe9;
+    font-size: 12px;
+  }
+  .ribbon-tab {
+    padding: 8px 14px;
+    color: #201f1e;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    font-weight: 400;
+  }
+  .ribbon-tab:hover { background: #f3f2f1; }
+  .ribbon-tab.active {
+    color: #185ABD;
+    font-weight: 600;
+    border-bottom-color: #185ABD;
+  }
+  .ribbon-tab.ai-tab {
+    background: linear-gradient(90deg,#faf5ff,#f0f9ff);
+    color: #7e22ce;
+    margin-left: 4px;
+    border-radius: 4px 4px 0 0;
+  }
+  .ribbon-tab.ai-tab.active { color: #7e22ce; border-bottom-color: #a855f7; }
+
+  .ribbon-toolbar {
+    background: #ffffff;
+    padding: 8px 14px;
+    display: flex; align-items: center; gap: 4px;
+    border-bottom: 1px solid #edebe9;
+    flex-wrap: wrap;
+  }
+  .tool-group {
+    display: flex; align-items: center; gap: 2px;
+    padding-right: 8px; margin-right: 4px;
+    border-right: 1px solid #edebe9;
+  }
+  .tool-group:last-child { border-right: none; }
+  .tool-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    padding: 5px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: #201f1e;
+    display: inline-flex; align-items: center; gap: 5px;
+    line-height: 1.2;
+  }
+  .tool-btn:hover { background: #f3f2f1; border-color: #e2e8f0; }
+  .tool-btn.primary {
+    background: #185ABD; color: #ffffff; padding: 6px 12px; font-weight: 600;
+  }
+  .tool-btn.primary:hover { background: #1a5fc8; }
+  .tool-btn.ai {
+    background: linear-gradient(90deg,#f0f9ff,#faf5ff);
+    color: #7e22ce; font-weight: 600;
+    border: 1px solid #E9D5FF;
+  }
+  .tool-btn .icon { font-size: 14px; }
+
+  /* Main layout */
+  .editor-main {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 260px 1fr 320px;
+    overflow: hidden;
+  }
+
+  /* Left rail */
+  .left-rail {
+    background: #ffffff;
+    border-right: 1px solid #edebe9;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .rail-header {
+    padding: 12px 14px 8px;
+    font-size: 11px; letter-spacing: 1.5px; color: #605e5c;
+    text-transform: uppercase; font-weight: 600;
+  }
+  .rail-section {
+    padding: 8px 0;
+    border-bottom: 1px solid #f3f2f1;
+  }
+  .filter-chips {
+    padding: 4px 14px 12px;
+    display: flex; flex-wrap: wrap; gap: 6px;
+  }
+  .filter-chip {
+    padding: 4px 9px;
+    font-size: 11px;
+    background: #f3f2f1;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    color: #605e5c;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .filter-chip:hover { background: #edebe9; }
+  .filter-chip.active {
+    background: #eff6ff; color: #185ABD; border-color: #93c5fd; font-weight: 600;
+  }
+  .filter-chip .count {
+    background: rgba(0,0,0,0.08);
+    padding: 0 5px; border-radius: 8px; font-size: 10px;
+  }
+  .filter-chip.active .count { background: rgba(24,90,189,0.15); }
+
+  .outline-list {
+    padding: 4px 8px 12px;
+    overflow-y: auto;
+    flex: 1;
+  }
+  .outline-item {
+    padding: 6px 10px;
+    font-size: 12px;
+    color: #201f1e;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+    line-height: 1.4;
+  }
+  .outline-item:hover { background: #f3f2f1; }
+  .outline-item.active { background: #eff6ff; color: #185ABD; font-weight: 600; }
+  .outline-item.level-2 { padding-left: 22px; color: #605e5c; font-size: 11px; }
+  .outline-item.level-3 { padding-left: 32px; color: #8a8886; font-size: 11px; }
+  .outline-drag { color: #cbd5e1; font-size: 10px; cursor: grab; }
+  .outline-conf {
+    width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+    margin-left: auto;
+  }
+  .conf-hi { background: #22c55e; }
+  .conf-med { background: #f59e0b; }
+  .conf-lo { background: #ef4444; }
+
+  /* Canvas */
+  .canvas-wrap {
+    overflow-y: auto;
+    background: #e5e7eb;
+    padding: 24px 0 60px;
+    position: relative;
+  }
+  .page {
+    background: #ffffff;
+    width: 720px;
+    margin: 0 auto 20px;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.10);
+    padding: 60px 72px;
+    min-height: 940px;
+    position: relative;
+    font-size: 13px;
+    line-height: 1.65;
+  }
+  .page-num {
+    position: absolute; bottom: 20px; right: 30px;
+    font-size: 10px; color: #94a3b8;
+  }
+
+  /* Cover page */
+  .cover-page { text-align: center; padding-top: 200px; }
+  .cover-page .client-logo {
+    width: 130px; height: 46px;
+    background: linear-gradient(135deg,#1e40af,#3b82f6);
+    color: #ffffff;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-weight: 800; letter-spacing: 3px; font-size: 14px;
+    margin-bottom: 100px;
+    border-radius: 4px;
+  }
+  .cover-page h1 {
+    font-size: 32px; font-weight: 700; color: #0F172A;
+    margin-bottom: 12px; line-height: 1.2;
+  }
+  .cover-page .subtitle {
+    font-size: 15px; color: #475569; margin-bottom: 60px;
+  }
+  .cover-meta {
+    display: inline-block; text-align: left; font-size: 12px; color: #64748b;
+    border-top: 1px solid #cbd5e1; padding-top: 20px; min-width: 300px;
+  }
+  .cover-meta div { margin: 3px 0; }
+  .cover-meta b { color: #0F172A; }
+
+  /* Section headings */
+  .section-h1 {
+    font-size: 22px; font-weight: 700; color: #185ABD;
+    margin: 32px 0 14px; padding-bottom: 8px;
+    border-bottom: 2px solid #185ABD;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section-num {
+    background: #185ABD; color: #ffffff;
+    padding: 2px 8px; border-radius: 4px; font-size: 14px;
+  }
+  .section-h2 {
+    font-size: 16px; font-weight: 700; color: #0F172A;
+    margin: 22px 0 10px;
+  }
+
+  /* Steps */
+  .step {
+    display: flex; gap: 14px;
+    margin: 14px 0;
+    padding: 8px 10px 8px 8px;
+    border-radius: 6px;
+    border-left: 3px solid transparent;
+    transition: background 0.12s ease;
+    position: relative;
+  }
+  .step:hover { background: #f8fafc; }
+  .step.selected {
+    background: #eff6ff; border-left-color: #185ABD;
+  }
+  .step.conf-lo { border-left-color: #ef4444; background: #fef2f2; }
+  .step.conf-lo:hover { background: #fee2e2; }
+  .step.conf-med { border-left-color: #f59e0b; }
+  .step-num {
+    background: #185ABD; color: #ffffff;
+    width: 26px; height: 26px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 12px; flex-shrink: 0;
+  }
+  .step.conf-lo .step-num { background: #ef4444; }
+  .step.conf-med .step-num { background: #f59e0b; }
+  .step-body { flex: 1; }
+  .step-title {
+    font-weight: 600; margin-bottom: 4px; color: #0F172A;
+    font-size: 13.5px;
+  }
+  .step-desc {
+    color: #475569; font-size: 12.5px; line-height: 1.65;
+  }
+  .step-meta {
+    display: flex; gap: 10px; align-items: center;
+    margin-top: 6px; font-size: 11px; color: #94a3b8;
+  }
+  .step-meta .play-btn {
+    background: none; border: none; color: #185ABD;
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 11px; padding: 2px 6px; border-radius: 4px;
+  }
+  .step-meta .play-btn:hover { background: #eff6ff; }
+  .step-conf-badge {
+    padding: 1px 7px; border-radius: 10px; font-size: 10px;
+    font-weight: 700; text-transform: uppercase;
+  }
+  .step-conf-badge.hi { background: #dcfce7; color: #166534; }
+  .step-conf-badge.med { background: #fef3c7; color: #92400e; }
+  .step-conf-badge.lo { background: #fee2e2; color: #991b1b; }
+
+  /* Screenshot in a step */
+  .screenshot {
+    margin: 10px 0 4px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background: #ffffff;
+    max-width: 100%;
+    display: block;
+    position: relative;
+    cursor: pointer;
+    overflow: hidden;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .screenshot:hover {
+    box-shadow: 0 6px 20px rgba(24,90,189,0.20);
+    transform: translateY(-1px);
+  }
+  .screenshot.selected {
+    border-color: #185ABD; border-width: 2px;
+    box-shadow: 0 6px 20px rgba(24,90,189,0.30);
+  }
+  .screenshot svg { display: block; width: 100%; height: auto; }
+  .screenshot-badge {
+    position: absolute; top: 6px; right: 6px;
+    background: rgba(15,23,42,0.85);
+    color: #ffffff;
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 10px;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .screenshot-badge.hi { background: #16a34a; }
+  .screenshot-badge.med { background: #d97706; }
+  .screenshot-badge.lo { background: #dc2626; }
+
+  /* Callout table */
+  .callout {
+    background: #f0f9ff; border-left: 3px solid #185ABD;
+    padding: 10px 14px; border-radius: 4px;
+    margin: 12px 0; font-size: 12.5px; color: #185ABD;
+  }
+  .callout b { color: #0F172A; }
+
+  /* Tables in doc */
+  .doc-table {
+    width: 100%; border-collapse: collapse;
+    margin: 12px 0; font-size: 12px;
+  }
+  .doc-table th, .doc-table td {
+    padding: 6px 10px; border: 1px solid #cbd5e1;
+    text-align: left;
+  }
+  .doc-table th { background: #f1f5f9; font-weight: 600; }
+
+  /* Right rail */
+  .right-rail {
+    background: #ffffff;
+    border-left: 1px solid #edebe9;
+    overflow-y: auto;
+    display: flex; flex-direction: column;
+  }
+  .rail-panel {
+    padding: 16px;
+  }
+  .rail-panel-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .rail-panel-title {
+    font-size: 13px; font-weight: 700; color: #0F172A;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .rail-panel-close {
+    background: none; border: none; color: #64748b;
+    font-size: 16px; line-height: 1; padding: 4px;
+  }
+  .empty-panel {
+    padding: 40px 20px; text-align: center;
+  }
+  .empty-panel-icon {
+    width: 60px; height: 60px; margin: 0 auto 14px;
+    background: linear-gradient(135deg,#faf5ff,#f0f9ff);
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px;
+  }
+  .empty-panel-title {
+    font-size: 14px; font-weight: 600; color: #0F172A; margin-bottom: 4px;
+  }
+  .empty-panel-hint {
+    font-size: 11.5px; color: #64748b; line-height: 1.6;
+    max-width: 260px; margin: 0 auto;
+  }
+
+  /* Right rail — Screenshot editor */
+  .ss-current-wrap {
+    background: #f1f5f9; border-radius: 8px;
+    padding: 12px; margin-bottom: 14px;
+  }
+  .ss-current { border-radius: 4px; overflow: hidden; }
+  .ss-current svg { display: block; width: 100%; }
+  .ss-meta {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 8px; font-size: 11px; color: #64748b;
+  }
+  .ss-meta .conf { color: #dc2626; font-weight: 600; }
+  .subhead {
+    font-size: 11px; font-weight: 700; color: #64748b;
+    letter-spacing: 1.2px; text-transform: uppercase;
+    margin: 14px 0 8px;
+  }
+  .candidate-strip {
+    display: grid;
+    grid-template-columns: repeat(3,1fr);
+    gap: 6px;
+  }
+  .candidate {
+    border: 1.5px solid #e2e8f0; border-radius: 5px;
+    overflow: hidden; cursor: pointer; position: relative;
+    background: #ffffff;
+    transition: all 0.15s ease;
+  }
+  .candidate:hover { border-color: #185ABD; transform: translateY(-1px); }
+  .candidate.selected { border-color: #185ABD; border-width: 2px; }
+  .candidate svg { display: block; width: 100%; }
+  .candidate-time {
+    position: absolute; bottom: 2px; right: 3px;
+    font-size: 9px; color: #ffffff;
+    background: rgba(15,23,42,0.75);
+    padding: 1px 4px; border-radius: 3px;
+  }
+  .nudge-row {
+    display: flex; gap: 4px; margin-top: 8px;
+  }
+  .nudge-btn {
+    flex: 1; padding: 5px; background: #f3f2f1;
+    border: 1px solid #e2e8f0; border-radius: 4px;
+    font-size: 11px; color: #201f1e;
+  }
+  .nudge-btn:hover { background: #edebe9; }
+
+  .search-box {
+    display: flex; margin-top: 8px;
+    background: #f8fafc; border: 1px solid #e2e8f0;
+    border-radius: 6px; padding: 8px 10px;
+    align-items: center; gap: 8px;
+  }
+  .search-box input {
+    flex: 1; border: none; background: transparent; outline: none;
+    font-size: 12px; color: #201f1e;
+  }
+  .search-box input::placeholder { color: #94a3b8; }
+  .search-btn {
+    background: #185ABD; color: #ffffff; border: none;
+    padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600;
+  }
+
+  .action-row {
+    display: flex; gap: 6px; margin-top: 14px; padding-top: 14px;
+    border-top: 1px solid #f3f2f1;
+  }
+  .action-btn {
+    flex: 1; padding: 8px 10px; border-radius: 6px;
+    font-size: 12px; font-weight: 600;
+    border: 1px solid #e2e8f0; background: #ffffff; color: #201f1e;
+    display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+  }
+  .action-btn:hover { background: #f3f2f1; }
+  .action-btn.primary {
+    background: #185ABD; color: #ffffff; border-color: #185ABD;
+  }
+  .action-btn.primary:hover { background: #1a5fc8; }
+  .action-btn.danger { color: #dc2626; }
+  .action-btn.danger:hover { background: #fee2e2; }
+
+  /* Step edit panel actions */
+  .quick-actions {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+    margin-bottom: 12px;
+  }
+  .quick-action {
+    padding: 8px 10px; border: 1px solid #e2e8f0;
+    border-radius: 6px; background: #ffffff;
+    font-size: 12px; color: #201f1e; text-align: left;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: all 0.15s ease;
+  }
+  .quick-action:hover { background: #eff6ff; border-color: #93c5fd; color: #185ABD; }
+  .quick-action .icon { font-size: 14px; }
+
+  .rewrite-preview {
+    background: #ecfdf5; border: 1px solid #86efac;
+    border-radius: 6px; padding: 10px 12px;
+    font-size: 12.5px; color: #14532d; line-height: 1.6;
+    margin-top: 10px;
+  }
+  .rewrite-preview .label {
+    font-size: 10px; font-weight: 700; color: #16a34a;
+    letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px;
+  }
+
+  .source-video {
+    background: #0F172A; color: #ffffff;
+    border-radius: 6px; padding: 12px;
+    display: flex; align-items: center; gap: 10px;
+    margin-top: 10px;
+  }
+  .video-thumb {
+    width: 60px; height: 40px; border-radius: 4px;
+    background: linear-gradient(135deg,#4c1d95,#7e22ce);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+  .video-info { flex: 1; font-size: 11px; }
+  .video-info .timestamp { color: #7DD3FC; font-weight: 700; font-size: 12px; }
+  .video-info .transcript { color: #cbd5e1; margin-top: 3px; font-style: italic; }
+
+  /* Bottom chat bar */
+  .chat-bar {
+    background: #ffffff;
+    border-top: 1px solid #edebe9;
+    padding: 10px 20px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .chat-icon {
+    width: 34px; height: 34px; border-radius: 8px;
+    background: linear-gradient(135deg,#a855f7,#7e22ce);
+    color: #ffffff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px;
+    box-shadow: 0 4px 10px rgba(168,85,247,0.3);
+  }
+  .chat-input {
+    flex: 1;
+    padding: 10px 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    font-size: 13px;
+    background: #f8fafc;
+    outline: none;
+    transition: all 0.15s ease;
+  }
+  .chat-input:focus { background: #ffffff; border-color: #a855f7; box-shadow: 0 0 0 3px rgba(168,85,247,0.10); }
+  .chat-suggest {
+    display: flex; gap: 6px;
+    overflow-x: auto; white-space: nowrap;
+  }
+  .chat-suggest span {
+    font-size: 11px; padding: 4px 10px; background: #f0f9ff;
+    color: #185ABD; border: 1px solid #bfdbfe; border-radius: 12px;
+    cursor: pointer;
+  }
+  .chat-suggest span:hover { background: #dbeafe; }
+  .chat-send {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: #185ABD; color: #ffffff; border: none;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+  }
+  .chat-send:hover { background: #1a5fc8; }
+
+  /* Metrics slide-out overlay */
+  .metrics-btn {
+    background: linear-gradient(135deg,#ecfdf5,#f0f9ff);
+    color: #185ABD;
+    border: 1px solid #93c5fd;
+    padding: 4px 10px; border-radius: 12px;
+    font-size: 11px; font-weight: 600;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .metrics-btn:hover { background: #dbeafe; }
+  .metrics-btn .pulse {
+    width: 6px; height: 6px; border-radius: 50%; background: #22c55e;
+    box-shadow: 0 0 8px rgba(34,197,94,0.6);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .metrics-overlay {
+    position: fixed; inset: 0;
+    background: rgba(15,23,42,0.4);
+    z-index: 100;
+    display: none;
+    align-items: center; justify-content: flex-end;
+  }
+  .metrics-overlay.show { display: flex; }
+  .metrics-panel {
+    background: #ffffff;
+    width: 480px;
+    height: 100vh;
+    padding: 24px 28px;
+    overflow-y: auto;
+    box-shadow: -10px 0 40px rgba(0,0,0,0.15);
+    animation: slideIn 0.25s ease;
+  }
+  @keyframes slideIn {
+    from { transform: translateX(20px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+  .metrics-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 20px; padding-bottom: 14px;
+    border-bottom: 1px solid #edebe9;
+  }
+  .metrics-header h2 {
+    font-size: 18px; font-weight: 700; color: #0F172A;
+  }
+  .metrics-header .close {
+    background: none; border: none; font-size: 22px; color: #64748b; line-height: 1;
+  }
+  .metric-eyebrow {
+    font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase;
+    color: #185ABD; font-weight: 700; margin-bottom: 12px;
+  }
+  .metric-cards {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    margin-bottom: 24px;
+  }
+  .metric-card {
+    background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
+    padding: 12px 14px;
+  }
+  .metric-card .lbl {
+    font-size: 10px; font-weight: 700; color: #64748b;
+    letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px;
+  }
+  .metric-card .val {
+    font-size: 22px; font-weight: 800; color: #0F172A;
+    letter-spacing: -0.5px; line-height: 1;
+  }
+  .metric-card .delta {
+    font-size: 10px; margin-top: 3px; color: #64748b;
+  }
+  .metric-card.hi { background: linear-gradient(135deg,#ecfdf5,#f0fdf4); border-color: #86efac; }
+  .metric-card.hi .val { color: #14532d; }
+  .metric-card.warn { background: linear-gradient(135deg,#fffbeb,#fef3c7); border-color: #fcd34d; }
+  .metric-card.warn .val { color: #78350f; }
+
+  .quality-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 0; border-bottom: 1px solid #f3f2f1;
+  }
+  .quality-row:last-child { border-bottom: none; }
+  .quality-label { flex: 1; }
+  .quality-label .name { font-size: 13px; font-weight: 600; color: #0F172A; }
+  .quality-label .desc { font-size: 11px; color: #64748b; margin-top: 2px; }
+  .quality-score {
+    font-size: 20px; font-weight: 800; letter-spacing: -0.5px;
+    min-width: 60px; text-align: right;
+  }
+  .quality-bar {
+    height: 4px; background: #e2e8f0; border-radius: 2px;
+    margin-top: 6px; overflow: hidden;
+  }
+  .quality-bar .fill { height: 100%; border-radius: 2px; }
+
+  .edit-timeline {
+    background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
+    padding: 14px; margin-top: 16px;
+  }
+  .timeline-item {
+    display: flex; gap: 10px; padding: 6px 0;
+    font-size: 12px;
+    border-bottom: 1px solid #edebe9;
+  }
+  .timeline-item:last-child { border-bottom: none; }
+  .timeline-time { color: #94a3b8; font-size: 11px; min-width: 46px; }
+  .timeline-icon {
+    width: 22px; height: 22px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; flex-shrink: 0;
+  }
+  .timeline-icon.edit { background: #eff6ff; color: #185ABD; }
+  .timeline-icon.regen { background: #fef3c7; color: #d97706; }
+  .timeline-icon.del { background: #fee2e2; color: #dc2626; }
+  .timeline-icon.ai { background: #faf5ff; color: #a855f7; }
+  .timeline-body { flex: 1; color: #201f1e; line-height: 1.4; }
+  .timeline-body b { color: #0F172A; }
+
+  /* Floating text-selection toolbar */
+  .float-toolbar {
+    position: absolute;
+    background: #0F172A; color: #ffffff;
+    padding: 4px; border-radius: 6px;
+    display: none; align-items: center; gap: 2px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.24);
+    z-index: 50;
+  }
+  .float-toolbar.show { display: flex; }
+  .float-toolbar button {
+    background: transparent; border: none; color: #ffffff;
+    padding: 4px 10px; border-radius: 3px; font-size: 11px;
+  }
+  .float-toolbar button:hover { background: rgba(255,255,255,0.15); }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 5px; }
+  ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     LANDING VIEW
+═══════════════════════════════════════════════════════════════════ -->
+<div id="landing-view">
+  <div class="landing-top">
+    <div class="landing-brand">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/95/Infosys_logo.svg/1280px-Infosys_logo.svg.png" alt="Infosys">
+      <span class="divider">|</span>
+      <span class="product">TransitionSmart Review Studio</span>
+    </div>
+    <div class="landing-help">
+      Need help? <a href="#">Documentation</a><a href="#">Watch Demo</a>
+    </div>
+  </div>
+
+  <div class="landing-hero">
+    <div class="landing-card">
+      <div class="landing-eyebrow">Review Studio · SOP Editor</div>
+      <h1 class="landing-title">Review your AI-generated SOP,<br>with AI still by your side.</h1>
+      <p class="landing-subtitle">
+        Upload a TransitionSmart-generated .docx and open it in a Word-like editor with intelligent fix-in-place actions,
+        confidence-driven navigation, and real-time review telemetry.
+      </p>
+
+      <div class="drop-zone" onclick="openEditor()">
+        <div class="drop-icon">↑</div>
+        <div class="drop-title">Drop your SOP .docx here</div>
+        <div class="drop-subtitle">or <b>click to browse</b> · TransitionSmart-generated files unlock full AI features</div>
+      </div>
+
+      <div class="landing-options">
+        <div class="option-card">
+          <div class="option-icon">🎥</div>
+          <div>
+            <div class="option-title">Attach source video (optional)</div>
+            <div class="option-desc">Unlocks screenshot regeneration &amp; semantic frame search</div>
+          </div>
+        </div>
+        <div class="option-card">
+          <div class="option-icon">📄</div>
+          <div>
+            <div class="option-title">Attach client template (optional)</div>
+            <div class="option-desc">Locks output to the client's fonts, headers, numbering</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="landing-features">
+    <div class="feature-pill"><div class="icon">✏️</div><div class="label">Word-perfect editor</div></div>
+    <div class="feature-pill"><div class="icon">🎯</div><div class="label">One-click fixes</div></div>
+    <div class="feature-pill"><div class="icon">📊</div><div class="label">Review telemetry</div></div>
+    <div class="feature-pill"><div class="icon">🧠</div><div class="label">AI copilot always on</div></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     EDITOR VIEW
+═══════════════════════════════════════════════════════════════════ -->
+<div id="editor-view">
+
+  <!-- Title bar -->
+  <div class="titlebar">
+    <div class="titlebar-left">
+      <img class="logo" src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/95/Infosys_logo.svg/1280px-Infosys_logo.svg.png">
+      <span class="divider">|</span>
+      <span>TransitionSmart Review Studio</span>
+      <span class="divider">·</span>
+      <span class="doc-name">Journal Entry Approval SOP — Meridian Finance.docx</span>
+      <span class="save-indicator"><span class="dot"></span>All changes saved · 12 sec ago</span>
+    </div>
+    <div class="titlebar-right">
+      <button class="metrics-btn" onclick="openMetrics()">
+        <span class="pulse"></span> 42 min · 23 edits · Metrics
+      </button>
+      <button class="titlebar-btn" title="Minimize">–</button>
+      <button class="titlebar-btn" title="Maximize">□</button>
+      <button class="titlebar-btn" title="Close">✕</button>
+      <div class="avatar" title="Priya K.">PK</div>
+    </div>
+  </div>
+
+  <!-- Ribbon tabs -->
+  <div class="ribbon-tabs">
+    <button class="ribbon-tab">File</button>
+    <button class="ribbon-tab active">Home</button>
+    <button class="ribbon-tab">Insert</button>
+    <button class="ribbon-tab">Review</button>
+    <button class="ribbon-tab">View</button>
+    <button class="ribbon-tab ai-tab">✨ AI Assist</button>
+  </div>
+
+  <!-- Ribbon toolbar -->
+  <div class="ribbon-toolbar">
+    <div class="tool-group">
+      <button class="tool-btn"><span class="icon">↶</span>Undo</button>
+      <button class="tool-btn"><span class="icon">↷</span>Redo</button>
+    </div>
+    <div class="tool-group">
+      <button class="tool-btn"><b>B</b></button>
+      <button class="tool-btn"><i>I</i></button>
+      <button class="tool-btn"><u>U</u></button>
+      <button class="tool-btn"><span class="icon">A</span>Font</button>
+    </div>
+    <div class="tool-group">
+      <button class="tool-btn"><span class="icon">≡</span>Align</button>
+      <button class="tool-btn"><span class="icon">•</span>Bullets</button>
+      <button class="tool-btn"><span class="icon">1.</span>Numbering</button>
+    </div>
+    <div class="tool-group">
+      <button class="tool-btn ai"><span class="icon">↻</span>Regenerate</button>
+      <button class="tool-btn ai"><span class="icon">✎</span>Rewrite</button>
+      <button class="tool-btn ai"><span class="icon">⌘</span>Find &amp; Replace</button>
+      <button class="tool-btn ai"><span class="icon">✦</span>Fill missing</button>
+    </div>
+    <div class="tool-group">
+      <button class="tool-btn primary"><span class="icon">📤</span>Export to Word</button>
+    </div>
+  </div>
+
+  <!-- Main editor grid -->
+  <div class="editor-main">
+
+    <!-- ─── LEFT RAIL ─── -->
+    <div class="left-rail">
+      <div class="rail-header">Filters</div>
+      <div class="filter-chips">
+        <button class="filter-chip active">All <span class="count">40</span></button>
+        <button class="filter-chip">🔴 Low conf <span class="count">6</span></button>
+        <button class="filter-chip">📷 Missing images <span class="count">2</span></button>
+        <button class="filter-chip">🚩 Flagged <span class="count">3</span></button>
+        <button class="filter-chip">✏️ Modified <span class="count">14</span></button>
+      </div>
+
+      <div class="rail-header" style="border-top:1px solid #f3f2f1;padding-top:14px;">Outline</div>
+      <div class="outline-list" id="outline-list">
+        <div class="outline-item"><span class="outline-drag">⋮⋮</span>Cover Page<span class="outline-conf conf-hi"></span></div>
+        <div class="outline-item"><span class="outline-drag">⋮⋮</span>Table of Contents<span class="outline-conf conf-hi"></span></div>
+        <div class="outline-item"><span class="outline-drag">⋮⋮</span>1. Purpose &amp; Scope<span class="outline-conf conf-hi"></span></div>
+        <div class="outline-item"><span class="outline-drag">⋮⋮</span>2. Prerequisites<span class="outline-conf conf-hi"></span></div>
+        <div class="outline-item active"><span class="outline-drag">⋮⋮</span>3. Creating a Journal<span class="outline-conf conf-med"></span></div>
+        <div class="outline-item level-2">3.1 Navigate to Journals<span class="outline-conf conf-hi"></span></div>
+        <div class="outline-item level-2">3.2 Fill required fields<span class="outline-conf conf-lo"></span></div>
+        <div class="outline-item level-2">3.3 Attach documents<span class="outline-conf conf-hi"></span></div>
+        <div class="outline-item"><span class="outline-drag">⋮⋮</span>4. Submitting for Approval<span class="outline-conf conf-lo"></span></div>
+        <div class="outline-item"><span class="outline-drag">⋮⋮</span>5. Post-Approval Reconciliation<span class="outline-conf conf-med"></span></div>
+        <div class="outline-item"><span class="outline-drag">⋮⋮</span>6. Escalation Path<span class="outline-conf conf-hi"></span></div>
+        <div class="outline-item"><span class="outline-drag">⋮⋮</span>7. Reference Materials<span class="outline-conf conf-hi"></span></div>
+      </div>
+    </div>
+
+    <!-- ─── CANVAS ─── -->
+    <div class="canvas-wrap" id="canvas-wrap">
+
+      <!-- Cover Page -->
+      <div class="page cover-page">
+        <div class="client-logo">MERIDIAN</div>
+        <h1>Journal Entry Approval</h1>
+        <div class="subtitle">Standard Operating Procedure</div>
+        <div class="cover-meta">
+          <div><b>Version:</b> 1.0</div>
+          <div><b>Effective Date:</b> May 2026</div>
+          <div><b>Owner:</b> Finance Operations</div>
+          <div><b>Prepared by:</b> Infosys BPM · Meridian Account</div>
+        </div>
+        <div class="page-num">1</div>
+      </div>
+
+      <!-- Section 3: Creating a Journal (active/visible section for demo) -->
+      <div class="page">
+        <div class="section-h1">
+          <span class="section-num">3</span> Creating a Journal Entry
+        </div>
+
+        <p style="margin-bottom:12px;color:#475569;">
+          This section describes the end-to-end process for creating a new journal entry in the Meridian finance portal.
+          Follow each step in order. Screenshots are provided for reference.
+        </p>
+
+        <div class="section-h2">3.1 Navigate to the Journals module</div>
+
+        <div class="step" onclick="selectStep(this,1)">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <div class="step-title">Log in to the Meridian Finance Portal</div>
+            <div class="step-desc">
+              Open your browser and navigate to <b>https://portal.meridianfinance.com</b>. Enter your corporate SSO credentials.
+              You will be directed to the main dashboard after successful authentication.
+            </div>
+            <div class="screenshot" onclick="event.stopPropagation();selectScreenshot(this,1)">
+              <svg viewBox="0 0 600 300" xmlns="http://www.w3.org/2000/svg">
+                <rect width="600" height="300" fill="#f8fafc"/>
+                <rect y="0" width="600" height="34" fill="#1e40af"/>
+                <text x="14" y="22" fill="#fff" font-size="12" font-family="Segoe UI" font-weight="600">Meridian Finance Portal</text>
+                <text x="490" y="22" fill="#93c5fd" font-size="11" font-family="Segoe UI">Sign In</text>
+                <rect x="180" y="80" width="240" height="180" fill="#ffffff" stroke="#e2e8f0" rx="6"/>
+                <text x="300" y="110" text-anchor="middle" fill="#0F172A" font-size="16" font-family="Segoe UI" font-weight="700">Sign in</text>
+                <rect x="200" y="130" width="200" height="30" fill="#f8fafc" stroke="#cbd5e1" rx="4"/>
+                <text x="210" y="150" fill="#94a3b8" font-size="11" font-family="Segoe UI">Corporate email</text>
+                <rect x="200" y="170" width="200" height="30" fill="#f8fafc" stroke="#cbd5e1" rx="4"/>
+                <text x="210" y="190" fill="#94a3b8" font-size="11" font-family="Segoe UI">Password</text>
+                <rect x="200" y="215" width="200" height="30" fill="#1e40af" rx="4"/>
+                <text x="300" y="234" text-anchor="middle" fill="#ffffff" font-size="12" font-family="Segoe UI" font-weight="600">Sign In with SSO</text>
+                <rect x="196" y="211" width="208" height="38" fill="none" stroke="#ef4444" stroke-width="2.5" rx="4"/>
+              </svg>
+              <div class="screenshot-badge hi">● 96%</div>
+            </div>
+            <div class="step-meta">
+              <span class="step-conf-badge hi">high confidence</span>
+              <button class="play-btn">▶ 00:14 – 00:22 · Play source</button>
+              <span>· AI-generated · unedited</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="step conf-lo" onclick="selectStep(this,2)">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <div class="step-title">Open the Journals module from the left sidebar</div>
+            <div class="step-desc">
+              From the dashboard, click the <b>Journals</b> icon in the left navigation sidebar.
+              The Journals workspace will load. You should see a list of recent journal entries.
+            </div>
+            <div class="screenshot selected" onclick="event.stopPropagation();selectScreenshot(this,2)">
+              <svg viewBox="0 0 600 300" xmlns="http://www.w3.org/2000/svg">
+                <rect width="600" height="300" fill="#f8fafc"/>
+                <rect y="0" width="600" height="34" fill="#1e40af"/>
+                <text x="14" y="22" fill="#fff" font-size="12" font-family="Segoe UI" font-weight="600">Meridian Finance Portal</text>
+                <text x="520" y="22" fill="#93c5fd" font-size="11" font-family="Segoe UI">John D. ▾</text>
+                <rect x="0" y="34" width="70" height="266" fill="#0F172A"/>
+                <rect x="12" y="60" width="46" height="30" fill="#334155" rx="3"/>
+                <text x="35" y="80" text-anchor="middle" fill="#cbd5e1" font-size="9" font-family="Segoe UI">🏠</text>
+                <rect x="12" y="100" width="46" height="30" fill="#1e40af" rx="3"/>
+                <text x="35" y="120" text-anchor="middle" fill="#ffffff" font-size="9" font-family="Segoe UI">📋</text>
+                <text x="35" y="132" text-anchor="middle" fill="#93c5fd" font-size="7" font-family="Segoe UI">Journals</text>
+                <rect x="6" y="94" width="58" height="46" fill="none" stroke="#ef4444" stroke-width="2.5" rx="3"/>
+                <text x="90" y="70" fill="#0F172A" font-size="14" font-family="Segoe UI" font-weight="700">Journals — Recent Entries</text>
+                <rect x="90" y="90" width="490" height="34" fill="#ffffff" stroke="#e2e8f0" rx="4"/>
+                <text x="100" y="110" fill="#0F172A" font-size="11" font-family="Segoe UI">JV-2024-1042 · Payroll accrual</text>
+                <text x="530" y="110" fill="#64748b" font-size="10" font-family="Segoe UI">Draft</text>
+                <rect x="90" y="128" width="490" height="34" fill="#ffffff" stroke="#e2e8f0" rx="4"/>
+                <text x="100" y="148" fill="#0F172A" font-size="11" font-family="Segoe UI">JV-2024-1041 · GL reclass</text>
+                <text x="530" y="148" fill="#16a34a" font-size="10" font-family="Segoe UI">Approved</text>
+                <rect x="90" y="166" width="490" height="34" fill="#ffffff" stroke="#e2e8f0" rx="4"/>
+                <text x="100" y="186" fill="#0F172A" font-size="11" font-family="Segoe UI">JV-2024-1040 · Depreciation</text>
+                <text x="530" y="186" fill="#16a34a" font-size="10" font-family="Segoe UI">Approved</text>
+              </svg>
+              <div class="screenshot-badge lo">● 62%</div>
+            </div>
+            <div class="step-meta">
+              <span class="step-conf-badge lo">low confidence · verify</span>
+              <button class="play-btn">▶ 00:24 – 00:38 · Play source</button>
+              <span>· AI-generated · unedited</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-h2">3.2 Fill in the required fields</div>
+
+        <div class="step conf-lo" onclick="selectStep(this,3)">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <div class="step-title">Click "Add Journal" and fill in the mandatory fields</div>
+            <div class="step-desc">
+              At the top-right of the Journals workspace, click the <b>Add Journal</b> button. A form will open with the following mandatory fields:
+              Journal Number, Date, Description, Debit GL Code, Credit GL Code, Amount, and Cost Center.
+            </div>
+            <div class="callout">
+              <b>⚠ Note:</b> The Amount must always be entered as a positive number. Debits and credits are inferred from the account codes selected.
+            </div>
+            <div class="step-meta">
+              <span class="step-conf-badge lo">low confidence · verify</span>
+              <button class="play-btn">▶ 00:40 – 01:12 · Play source</button>
+              <span>· AI-generated · unedited</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="step conf-med" onclick="selectStep(this,4)">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <div class="step-title">Enter the Cost Center from the drop-down</div>
+            <div class="step-desc">
+              Select the appropriate Cost Center from the drop-down list. Use the search box within the drop-down if the list is long.
+              Ensure the Cost Center matches the department budget owner.
+            </div>
+            <div class="step-meta">
+              <span class="step-conf-badge med">medium confidence</span>
+              <button class="play-btn">▶ 01:14 – 01:28 · Play source</button>
+              <span>· Edited by Priya · 2 min ago</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="page-num">7</div>
+      </div>
+
+    </div>
+
+    <!-- ─── RIGHT RAIL (Screenshot Editor) ─── -->
+    <div class="right-rail" id="right-rail">
+      <div class="rail-panel">
+        <div class="rail-panel-header">
+          <div class="rail-panel-title">📷 Screenshot Editor</div>
+          <button class="rail-panel-close" onclick="closeRightPanel()">✕</button>
+        </div>
+
+        <div class="ss-current-wrap">
+          <div class="ss-current">
+            <svg viewBox="0 0 600 200" xmlns="http://www.w3.org/2000/svg">
+              <rect width="600" height="200" fill="#f8fafc"/>
+              <rect y="0" width="600" height="34" fill="#1e40af"/>
+              <text x="14" y="22" fill="#fff" font-size="12" font-family="Segoe UI" font-weight="600">Meridian Finance Portal</text>
+              <rect x="0" y="34" width="70" height="166" fill="#0F172A"/>
+              <rect x="12" y="100" width="46" height="30" fill="#1e40af" rx="3"/>
+              <rect x="6" y="94" width="58" height="46" fill="none" stroke="#ef4444" stroke-width="2.5" rx="3"/>
+            </svg>
+          </div>
+          <div class="ss-meta">
+            <span>Step 2 · Frame at 00:31</span>
+            <span class="conf">● 62% confidence</span>
+          </div>
+        </div>
+
+        <div class="subhead">Better candidates from the source video</div>
+        <div class="candidate-strip">
+          <div class="candidate" onclick="pickCandidate(this)">
+            <svg viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg">
+              <rect width="200" height="120" fill="#f8fafc"/>
+              <rect width="200" height="20" fill="#1e40af"/>
+              <rect x="0" y="20" width="30" height="100" fill="#0F172A"/>
+              <rect x="6" y="55" width="18" height="14" fill="#1e40af" rx="2"/>
+              <rect x="4" y="53" width="22" height="18" fill="none" stroke="#ef4444" stroke-width="1.5" rx="2"/>
+            </svg>
+            <div class="candidate-time">00:28</div>
+          </div>
+          <div class="candidate selected" onclick="pickCandidate(this)">
+            <svg viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg">
+              <rect width="200" height="120" fill="#f8fafc"/>
+              <rect width="200" height="20" fill="#1e40af"/>
+              <rect x="0" y="20" width="30" height="100" fill="#0F172A"/>
+              <rect x="4" y="52" width="22" height="20" fill="#1e40af" rx="2"/>
+              <rect x="2" y="50" width="26" height="24" fill="none" stroke="#22c55e" stroke-width="2" rx="2"/>
+              <rect x="35" y="30" width="160" height="12" fill="#ffffff" stroke="#cbd5e1" rx="2"/>
+              <rect x="35" y="50" width="160" height="12" fill="#ffffff" stroke="#cbd5e1" rx="2"/>
+              <rect x="35" y="70" width="160" height="12" fill="#ffffff" stroke="#cbd5e1" rx="2"/>
+              <rect x="35" y="90" width="160" height="12" fill="#ffffff" stroke="#cbd5e1" rx="2"/>
+            </svg>
+            <div class="candidate-time">00:32 ✓</div>
+          </div>
+          <div class="candidate" onclick="pickCandidate(this)">
+            <svg viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg">
+              <rect width="200" height="120" fill="#f8fafc"/>
+              <rect width="200" height="20" fill="#1e40af"/>
+              <rect x="0" y="20" width="30" height="100" fill="#0F172A"/>
+              <rect x="6" y="55" width="18" height="14" fill="#1e40af" rx="2"/>
+              <rect x="45" y="35" width="140" height="10" fill="#e2e8f0" rx="2"/>
+              <rect x="45" y="55" width="140" height="10" fill="#e2e8f0" rx="2"/>
+            </svg>
+            <div class="candidate-time">00:35</div>
+          </div>
+          <div class="candidate" onclick="pickCandidate(this)">
+            <svg viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg">
+              <rect width="200" height="120" fill="#f8fafc"/>
+              <rect width="200" height="20" fill="#a855f7"/>
+              <rect x="30" y="35" width="140" height="70" fill="#ffffff" stroke="#e2e8f0" rx="4"/>
+            </svg>
+            <div class="candidate-time">00:41</div>
+          </div>
+          <div class="candidate" onclick="pickCandidate(this)">
+            <svg viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg">
+              <rect width="200" height="120" fill="#f8fafc"/>
+              <rect width="200" height="20" fill="#1e40af"/>
+              <rect x="30" y="30" width="140" height="80" fill="#ffffff" stroke="#e2e8f0" rx="3"/>
+              <rect x="40" y="42" width="60" height="10" fill="#e2e8f0" rx="2"/>
+              <rect x="40" y="58" width="120" height="8" fill="#f1f5f9" rx="2"/>
+              <rect x="40" y="72" width="120" height="8" fill="#f1f5f9" rx="2"/>
+            </svg>
+            <div class="candidate-time">00:44</div>
+          </div>
+          <div class="candidate" onclick="pickCandidate(this)">
+            <svg viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg">
+              <rect width="200" height="120" fill="#f8fafc"/>
+              <rect width="200" height="20" fill="#1e40af"/>
+              <circle cx="100" cy="70" r="20" fill="#22c55e"/>
+              <text x="100" y="75" text-anchor="middle" fill="#fff" font-size="18" font-weight="700">✓</text>
+            </svg>
+            <div class="candidate-time">00:48</div>
+          </div>
+        </div>
+
+        <div class="nudge-row">
+          <button class="nudge-btn">◂◂ -5s</button>
+          <button class="nudge-btn">◂ -1s</button>
+          <button class="nudge-btn">+1s ▸</button>
+          <button class="nudge-btn">+5s ▸▸</button>
+        </div>
+
+        <div class="subhead">Or describe what you're looking for</div>
+        <div class="search-box">
+          <span style="color:#a855f7;">✨</span>
+          <input type="text" placeholder="e.g. show the Journals icon highlighted in the sidebar">
+          <button class="search-btn">Search</button>
+        </div>
+        <div style="margin-top:8px;font-size:11px;color:#64748b;">
+          AI will search the entire source video for the best matching frame.
+        </div>
+
+        <div class="action-row">
+          <button class="action-btn danger">🗑 Delete</button>
+          <button class="action-btn">📤 Upload own</button>
+          <button class="action-btn primary">✓ Apply</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom chat bar -->
+  <div class="chat-bar">
+    <div class="chat-icon">✨</div>
+    <input class="chat-input" type="text" placeholder="Ask AI to fix, find, rewrite anything...   e.g. 'Make step 3 more concise' or 'Show all low-confidence steps'">
+    <div class="chat-suggest">
+      <span>Rephrase this step</span>
+      <span>Find &amp; replace terminology</span>
+      <span>Add missing validation step</span>
+      <span>Show only low-confidence</span>
+    </div>
+    <button class="chat-send">➤</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     METRICS SLIDE-OUT
+═══════════════════════════════════════════════════════════════════ -->
+<div class="metrics-overlay" id="metrics-overlay" onclick="if(event.target===this)closeMetrics()">
+  <div class="metrics-panel">
+    <div class="metrics-header">
+      <h2>📊 Review Telemetry &amp; Quality</h2>
+      <button class="close" onclick="closeMetrics()">✕</button>
+    </div>
+
+    <!-- Reviewer telemetry -->
+    <div class="metric-eyebrow">Reviewer Activity — Priya K.</div>
+    <div class="metric-cards">
+      <div class="metric-card">
+        <div class="lbl">⏱ Time Spent</div>
+        <div class="val">42 min</div>
+        <div class="delta">of ~90 min target</div>
+      </div>
+      <div class="metric-card">
+        <div class="lbl">✏️ Total Edits</div>
+        <div class="val">23</div>
+        <div class="delta">14 text · 6 image · 3 structural</div>
+      </div>
+      <div class="metric-card">
+        <div class="lbl">🔄 Screenshots Replaced</div>
+        <div class="val">6</div>
+        <div class="delta">4 candidates · 2 regenerated</div>
+      </div>
+      <div class="metric-card">
+        <div class="lbl">🧠 AI Suggestions Used</div>
+        <div class="val">11</div>
+        <div class="delta">of 14 offered · 79%</div>
+      </div>
+      <div class="metric-card hi">
+        <div class="lbl">✓ Approved</div>
+        <div class="val">28 / 40</div>
+        <div class="delta">70% of steps</div>
+      </div>
+      <div class="metric-card warn">
+        <div class="lbl">⚠ Pending Review</div>
+        <div class="val">12</div>
+        <div class="delta">6 low conf · 3 flagged · 3 new</div>
+      </div>
+    </div>
+
+    <!-- Authorship split -->
+    <div class="metric-eyebrow">AI vs Human Authorship</div>
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px;margin-bottom:24px;">
+      <div style="display:flex;height:14px;border-radius:7px;overflow:hidden;margin-bottom:10px;">
+        <div style="width:78%;background:linear-gradient(90deg,#185ABD,#2B7CD3);"></div>
+        <div style="width:22%;background:linear-gradient(90deg,#f97316,#ea580c);"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;">
+        <span><span style="display:inline-block;width:8px;height:8px;background:#185ABD;border-radius:50%;margin-right:6px;"></span><b>AI-authored:</b> 78%</span>
+        <span><span style="display:inline-block;width:8px;height:8px;background:#f97316;border-radius:50%;margin-right:6px;"></span><b>Human-modified:</b> 22%</span>
+      </div>
+    </div>
+
+    <!-- Quality metrics -->
+    <div class="metric-eyebrow">Document Quality Signals</div>
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:6px 14px;margin-bottom:24px;">
+      <div class="quality-row">
+        <div class="quality-label">
+          <div class="name">Grammar</div>
+          <div class="desc">Grammarly-style errors detected</div>
+          <div class="quality-bar"><div class="fill" style="width:94%;background:#22c55e;"></div></div>
+        </div>
+        <div class="quality-score" style="color:#16a34a;">94</div>
+      </div>
+      <div class="quality-row">
+        <div class="quality-label">
+          <div class="name">Readability</div>
+          <div class="desc">Flesch grade · target 10–12</div>
+          <div class="quality-bar"><div class="fill" style="width:85%;background:#22c55e;"></div></div>
+        </div>
+        <div class="quality-score" style="color:#16a34a;">10.4</div>
+      </div>
+      <div class="quality-row">
+        <div class="quality-label">
+          <div class="name">Language consistency</div>
+          <div class="desc">US English · terminology consistent</div>
+          <div class="quality-bar"><div class="fill" style="width:98%;background:#22c55e;"></div></div>
+        </div>
+        <div class="quality-score" style="color:#16a34a;">98</div>
+      </div>
+      <div class="quality-row">
+        <div class="quality-label">
+          <div class="name">Tone alignment</div>
+          <div class="desc">Formal · matches Meridian house style</div>
+          <div class="quality-bar"><div class="fill" style="width:88%;background:#22c55e;"></div></div>
+        </div>
+        <div class="quality-score" style="color:#16a34a;">88</div>
+      </div>
+      <div class="quality-row">
+        <div class="quality-label">
+          <div class="name">Template fidelity</div>
+          <div class="desc">Fonts, headers, numbering preserved</div>
+          <div class="quality-bar"><div class="fill" style="width:100%;background:#22c55e;"></div></div>
+        </div>
+        <div class="quality-score" style="color:#16a34a;">100</div>
+      </div>
+      <div class="quality-row">
+        <div class="quality-label">
+          <div class="name">Screenshot quality</div>
+          <div class="desc">Avg confidence across all images</div>
+          <div class="quality-bar"><div class="fill" style="width:72%;background:#f59e0b;"></div></div>
+        </div>
+        <div class="quality-score" style="color:#d97706;">72</div>
+      </div>
+      <div class="quality-row">
+        <div class="quality-label">
+          <div class="name">Coverage vs source video</div>
+          <div class="desc">SOP captures 91% of demo content</div>
+          <div class="quality-bar"><div class="fill" style="width:91%;background:#22c55e;"></div></div>
+        </div>
+        <div class="quality-score" style="color:#16a34a;">91</div>
+      </div>
+    </div>
+
+    <!-- Edit timeline -->
+    <div class="metric-eyebrow">Recent Edit Timeline</div>
+    <div class="edit-timeline">
+      <div class="timeline-item">
+        <div class="timeline-time">14:22</div>
+        <div class="timeline-icon regen">↻</div>
+        <div class="timeline-body">Replaced screenshot in <b>Step 5.2</b> · picked candidate at 04:12</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-time">14:19</div>
+        <div class="timeline-icon edit">✎</div>
+        <div class="timeline-body">Rewrote <b>Step 4</b> via AI · "Make more concise" · saved 3 lines</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-time">14:15</div>
+        <div class="timeline-icon ai">✨</div>
+        <div class="timeline-body">AI Chat: <i>"Find all instances of 'clickable button' and change to 'button'"</i> · 7 replacements</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-time">14:08</div>
+        <div class="timeline-icon del">✕</div>
+        <div class="timeline-body">Deleted <b>Step 3.4</b> · "Log out and back in" (redundant)</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-time">14:02</div>
+        <div class="timeline-icon edit">↕</div>
+        <div class="timeline-body">Reordered <b>Section 5</b> steps · moved reconciliation before summary</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-time">13:56</div>
+        <div class="timeline-icon regen">📷</div>
+        <div class="timeline-body">Regenerated 3 screenshots via <b>Nudge +2s</b> in Section 4</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-time">13:40</div>
+        <div class="timeline-icon edit">✎</div>
+        <div class="timeline-body">Opened document · <b>reviewing session started</b></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // View switching
+  function openEditor() {
+    document.getElementById('landing-view').style.display = 'none';
+    document.getElementById('editor-view').style.display = 'flex';
+  }
+
+  // Metrics overlay
+  function openMetrics() {
+    document.getElementById('metrics-overlay').classList.add('show');
+  }
+  function closeMetrics() {
+    document.getElementById('metrics-overlay').classList.remove('show');
+  }
+
+  // Right-rail panel switching between empty/screenshot/step modes
+  function selectStep(el, id) {
+    // Clear other selections
+    document.querySelectorAll('.step.selected').forEach(e => e.classList.remove('selected'));
+    document.querySelectorAll('.screenshot.selected').forEach(e => e.classList.remove('selected'));
+    el.classList.add('selected');
+    renderStepPanel(id);
+  }
+
+  function selectScreenshot(el, id) {
+    document.querySelectorAll('.screenshot.selected').forEach(e => e.classList.remove('selected'));
+    document.querySelectorAll('.step.selected').forEach(e => e.classList.remove('selected'));
+    el.classList.add('selected');
+    // Right rail already shows screenshot editor by default; nothing else to change here.
+  }
+
+  function pickCandidate(el) {
+    document.querySelectorAll('.candidate.selected').forEach(e => e.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+
+  function closeRightPanel() {
+    document.getElementById('right-rail').innerHTML = `
+      <div class="empty-panel">
+        <div class="empty-panel-icon">🧠</div>
+        <div class="empty-panel-title">Select something to fix</div>
+        <div class="empty-panel-hint">
+          Click a step to rewrite, split, merge, or move it. Click a screenshot to replace or regenerate.
+          Or use the chat bar at the bottom for anything else.
+        </div>
+      </div>`;
+  }
+
+  function renderStepPanel(id) {
+    document.getElementById('right-rail').innerHTML = `
+      <div class="rail-panel">
+        <div class="rail-panel-header">
+          <div class="rail-panel-title">✎ Step Editor · Step ${id}</div>
+          <button class="rail-panel-close" onclick="closeRightPanel()">✕</button>
+        </div>
+
+        <div class="subhead">Quick rewrites</div>
+        <div class="quick-actions">
+          <button class="quick-action"><span class="icon">📝</span> Simpler</button>
+          <button class="quick-action"><span class="icon">✂</span> Shorter</button>
+          <button class="quick-action"><span class="icon">🎩</span> More formal</button>
+          <button class="quick-action"><span class="icon">➕</span> Add detail</button>
+          <button class="quick-action"><span class="icon">🔤</span> Rephrase</button>
+          <button class="quick-action"><span class="icon">🌐</span> Translate</button>
+        </div>
+
+        <div class="rewrite-preview">
+          <div class="label">AI Preview · "Shorter"</div>
+          Click the <b>Journals</b> icon in the left sidebar. The Journals workspace opens with recent entries.
+        </div>
+
+        <div class="subhead">Structural actions</div>
+        <div class="quick-actions">
+          <button class="quick-action"><span class="icon">↕</span> Move up/down</button>
+          <button class="quick-action"><span class="icon">➗</span> Split step</button>
+          <button class="quick-action"><span class="icon">🔗</span> Merge with next</button>
+          <button class="quick-action"><span class="icon">📁</span> Move to section</button>
+          <button class="quick-action"><span class="icon">🚩</span> Flag for lead</button>
+          <button class="quick-action"><span class="icon">🗑</span> Delete step</button>
+        </div>
+
+        <div class="subhead">Source video (00:24 – 00:38)</div>
+        <div class="source-video">
+          <div class="video-thumb">▶</div>
+          <div class="video-info">
+            <div class="timestamp">00:24 → 00:38 · 14 sec</div>
+            <div class="transcript">"...now open the Journals module from the left panel..."</div>
+          </div>
+        </div>
+
+        <div class="action-row">
+          <button class="action-btn danger">✕ Reject AI</button>
+          <button class="action-btn">💾 Keep original</button>
+          <button class="action-btn primary">✓ Apply rewrite</button>
+        </div>
+      </div>`;
+  }
+
+  // Filter chip toggling (visual only)
+  document.querySelectorAll('.filter-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+    });
+  });
+
+  // Chat input placeholder cycling
+  const chatSuggestions = [
+    'Ask AI to fix, find, rewrite anything...',
+    'e.g. "Make step 3 more concise"',
+    'e.g. "Rename Save button to Submit everywhere"',
+    'e.g. "Add a validation step after step 8"',
+    'e.g. "Show all steps with low confidence"',
+  ];
+  let ci = 0;
+  const chatInput = document.querySelector('.chat-input');
+  setInterval(() => {
+    if (chatInput && document.activeElement !== chatInput) {
+      ci = (ci + 1) % chatSuggestions.length;
+      chatInput.placeholder = chatSuggestions[ci];
+    }
+  }, 3500);
+</script>
+</body>
+</html>

@@ -1,0 +1,306 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-50:  #EFF6FF;
+  --color-brand-100: #DBEAFE;
+  --color-brand-200: #BFDBFE;
+  --color-brand-300: #93C5FD;
+  --color-brand-400: #60A5FA;
+  --color-brand-500: #2563EB;
+  --color-brand-600: #1D4ED8;
+  --color-brand-700: #1E40AF;
+  --font-sans: 'Segoe UI Variable Display', 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Inter', system-ui, sans-serif;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  font-family: 'Segoe UI Variable Display', 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Inter', system-ui, sans-serif;
+  background: #FAFAF9;
+  color: #1F2937;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Word-doc page shadow */
+.page-shadow {
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 4px 12px rgba(15, 23, 42, 0.06),
+    0 12px 40px rgba(15, 23, 42, 0.04);
+}
+
+/* Very subtle inset shadow */
+.shadow-inner-sm {
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.05);
+}
+
+/* Animations */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.animate-pulse-dot { animation: pulse-dot 2s infinite; }
+
+@keyframes slide-in-right {
+  from { transform: translateX(20px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+.animate-slide-in-right { animation: slide-in-right 0.25s ease; }
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-fade-in { animation: fade-in 0.2s ease; }
+
+/* Scrollbars */
+::-webkit-scrollbar { width: 12px; height: 12px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.25);
+  border-radius: 10px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.55);
+  background-clip: content-box;
+  border: 3px solid transparent;
+}
+
+/*
+ * DISTINCT selection colors so it's obvious which is which:
+ *   - Native text drag-select    → YELLOW (browser highlight)
+ *   - Our block click-select     → BLUE   (border + tint via selectRing class)
+ *   - Native contentEditable focus → NO outline (we own the visual)
+ */
+::selection {
+  background: rgba(250, 204, 21, 0.35);   /* soft yellow — clearly not our brand blue */
+  color: inherit;
+}
+
+/* Suppress browser's default contentEditable focus outline — we render our own */
+[contenteditable]:focus,
+[contenteditable]:focus-visible {
+  outline: none !important;
+}
+
+/* Keep focus rings on real controls */
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid #2563EB;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/*
+ * Block-selection styling — Notion-style left-marker rather than a full-width bg.
+ * Applied by the .block-selected utility class on a chosen element in Canvas.
+ */
+.block-selected {
+  position: relative;
+  background-color: rgba(37, 99, 235, 0.06) !important;
+  border-radius: 4px;
+}
+.block-selected::before {
+  content: '';
+  position: absolute;
+  left: -12px;
+  top: 4px;
+  bottom: 4px;
+  width: 3px;
+  background: #2563EB;
+  border-radius: 2px;
+  z-index: 2;
+}
+
+/*
+ * Track-changes: block-level marker is intentionally minimal now.
+ * Actual visual marking is done inline on the .ts-inserted spans instead,
+ * so only the changed characters carry the highlight — not the whole paragraph.
+ * We keep .human-edited as an anchor class for counting / metrics only
+ * (no visual side-effects).
+ */
+.human-edited { /* no visual — inline .ts-inserted carries it */ }
+
+/*
+ * Inline track-changes marker.
+ * Word-style: colored underline under the added text + very soft background tint.
+ * The span wraps only the just-typed run, so exactly the modified text
+ * is highlighted.
+ */
+.ts-inserted {
+  background-color: rgba(245, 158, 11, 0.12);
+  border-bottom: 1.5px solid #F59E0B;
+  padding: 0 1px;
+  border-radius: 1px;
+  transition: background-color 0.15s ease;
+}
+.ts-inserted:hover {
+  background-color: rgba(245, 158, 11, 0.22);
+}
+
+/*
+ * Deleted text — kept visible with red strikethrough so the reviewer
+ * can see what the human took out. Toggling track-changes OFF hides
+ * these entirely (accepted view).
+ */
+.ts-deleted {
+  text-decoration: line-through;
+  text-decoration-color: #DC2626;
+  color: rgba(220, 38, 38, 0.85);
+  background-color: rgba(220, 38, 38, 0.06);
+  padding: 0 1px;
+  border-radius: 1px;
+}
+
+/*
+ * "Accepted view" — hide the amber underlines on additions, hide the
+ * strikethrough deletions entirely. This mirrors Word's "No Markup"
+ * option under Track Changes.
+ */
+.track-changes-off .ts-inserted {
+  background-color: transparent !important;
+  border-bottom: none !important;
+  padding: 0 !important;
+}
+.track-changes-off .ts-deleted {
+  display: none !important;
+}
+/*
+ * Track changes OFF also suppresses comment anchors so the reader sees a
+ * clean document. CommentMargin's scan skips anchors whose bounding rect
+ * is 0×0, so the margin balloons disappear along with them.
+ */
+.track-changes-off .ts-comment {
+  display: none !important;
+}
+
+/*
+ * Lists created by the Ribbon's bullet/numbered buttons. Tailwind's
+ * preflight resets <ul>/<ol>/<li> to no marker + no indent, so a bare
+ * <ul><li>text</li></ul> renders as plain text. runListToggle stamps
+ * every list it creates with class="ts-list"; these rules restore
+ * visible markers + indent so the user actually sees a real list.
+ */
+.ts-list {
+  padding-left: 32px !important;
+  margin: 6px 0 !important;
+  list-style-position: outside !important;
+}
+ul.ts-list  { list-style-type: disc    !important; }
+ol.ts-list  { list-style-type: decimal !important; }
+.ts-list li {
+  display: list-item !important;
+  margin: 2px 0 !important;
+}
+
+/*
+ * Comments — separate concept from track changes.
+ * A .ts-comment span marks text that has a sticky-note-style annotation.
+ * Visually distinct from .ts-inserted (amber = edits) using a blue underline.
+ */
+.ts-comment {
+  background-color: rgba(37, 99, 235, 0.10);
+  border-bottom: 2px dotted #2563EB;
+  padding: 0 1px;
+  border-radius: 1px;
+  cursor: help;
+  transition: background-color 0.15s ease;
+}
+.ts-comment:hover {
+  background-color: rgba(37, 99, 235, 0.20);
+}
+/*
+ * Word-style margin balloon — the actual comment card is rendered in
+ * the right-margin panel by CommentMargin.jsx. The anchor keeps its
+ * highlight; the balloon lives in the grey area to the right of the page
+ * and is connected to the anchor by an SVG leader line.
+ *
+ * Pending (draft) comments still add a subtle inline hint next to the
+ * anchor so the reviewer knows a comment is actively being written.
+ */
+.ts-comment.ts-comment-pending::after {
+  content: " · writing…";
+  color: #6B7280;
+  font-style: italic;
+  font-size: 0.85em;
+}
+/*
+ * Pending comment anchor — the user just clicked New Comment and is
+ * typing the comment in the panel. Pulse so it's obvious which text
+ * the pending draft is attached to.
+ */
+.ts-comment-pending {
+  background-color: rgba(37, 99, 235, 0.20) !important;
+  border-bottom: 2px solid #2563EB !important;
+  animation: ts-comment-pulse 1.6s ease-in-out infinite;
+}
+@keyframes ts-comment-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.35); }
+  50%      { box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.05); }
+}
+
+/*
+ * Grid overlay — toggled by the View > Grid button. Diagnostic grid over
+ * the page canvas so you can eyeball vertical rhythm and alignment.
+ */
+.docx-preview-host.show-grid,
+.uploaded-doc.show-grid {
+  background-image:
+    linear-gradient(to right,  rgba(37,99,235,0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(37,99,235,0.06) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/*
+ * Horizontal ruler — toggled by View > Ruler. Anchored under the ribbon.
+ */
+body.show-ruler::after {
+  content: "";
+  position: fixed;
+  left: 236px;
+  right: 300px;
+  top: 92px;
+  height: 22px;
+  z-index: 30;
+  background: repeating-linear-gradient(to right,
+    #F1F5F9 0, #F1F5F9 47px,
+    #94A3B8 47px, #94A3B8 48px);
+  border-bottom: 1px solid #CBD5E1;
+  pointer-events: none;
+}
+
+/*
+ * Read-only rendering of a version. Cursor stays default, the block
+ * hover tint is suppressed, and content-selection is still allowed.
+ */
+.uploaded-doc-readonly {
+  cursor: default;
+}
+.uploaded-doc-readonly [contenteditable="false"]:hover {
+  background-color: transparent !important;
+}
+
+/*
+ * Find & Replace highlights.
+ * .ts-find-hit — every match (soft yellow)
+ * .ts-find-current — the one the caret is on (stronger amber)
+ */
+.ts-find-hit {
+  background-color: rgba(250, 204, 21, 0.40);
+  border-radius: 2px;
+}
+.ts-find-current {
+  background-color: rgba(245, 158, 11, 0.75) !important;
+  outline: 2px solid #F59E0B;
+  outline-offset: 1px;
+  border-radius: 2px;
+}

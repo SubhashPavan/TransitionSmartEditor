@@ -1,0 +1,24 @@
+{
+  "name": "sop-editor",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "docx-preview": "^0.4.0",
+    "lucide-react": "^0.575.0",
+    "mammoth": "^1.12.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.2.1",
+    "@vitejs/plugin-react": "^5.1.1",
+    "tailwindcss": "^4.2.1",
+    "vite": "^7.3.1"
+  }
+}

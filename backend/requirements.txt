@@ -1,0 +1,15 @@
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+python-dotenv>=1.0.1
+python-multipart>=0.0.9
+pydantic>=2.9.0
+
+# Azure services
+azure-storage-blob>=12.23.1
+openai>=1.55.0
+
+# Gemini (video understanding)
+google-genai>=1.0.0
+
+# Qdrant (video transcript vector index)
+qdrant-client>=1.12.0
