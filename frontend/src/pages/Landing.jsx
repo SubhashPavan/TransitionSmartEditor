@@ -1,50 +1,41 @@
-import { useRef, useState } from 'react'
-import { Upload, Video, FileText, Pencil, Target, BarChart3, Brain, FileCheck2, Loader2 } from 'lucide-react'
+import { useState } from 'react'
+import { Video, FileText, Pencil, Target, BarChart3, Brain, FileCheck2, Loader2, ArrowRight } from 'lucide-react'
 import mammoth from 'mammoth'
 
 const INFOSYS_LOGO = 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/95/Infosys_logo.svg/1280px-Infosys_logo.svg.png'
 
+/**
+ * The demo Landing page. The reviewer can't upload their own SOP — this is
+ * a fixed showcase of the Ariba Supplier Management SOP that we ship in
+ * `public/sop-demo.docx`. Clicking the CTA fetches that .docx, parses it
+ * with mammoth, and hands the result to the Editor.
+ */
+const DEMO_DOC_URL  = '/sop-demo.docx'
+const DEMO_DOC_NAME = 'Ariba Supplier Management SOP.docx'
+
 export default function Landing({ onEnter }) {
-  const fileInputRef = useRef(null)
-  const [dragging, setDragging] = useState(false)
-  const [parsing, setParsing] = useState(false)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  const handleFile = async (file) => {
+  const openDemo = async () => {
     setError(null)
-    if (!file) return
-    if (!/\.docx$/i.test(file.name)) {
-      setError('Please choose a .docx file (mammoth only reads modern Word format).')
-      return
-    }
-    setParsing(true)
+    setLoading(true)
     try {
-      const arrayBuffer = await file.arrayBuffer()
+      const res = await fetch(DEMO_DOC_URL)
+      if (!res.ok) throw new Error(`Failed to fetch demo SOP: ${res.status}`)
+      const arrayBuffer = await res.arrayBuffer()
       const result = await mammoth.convertToHtml({ arrayBuffer })
       onEnter({
-        fileName: file.name,
+        fileName: DEMO_DOC_NAME,
         html: result.value,
-        arrayBuffer,  // keep the raw .docx for docx-preview (template-fidelity rendering)
+        arrayBuffer,
         messages: result.messages,
       })
     } catch (e) {
-      setError('Could not parse this file. Try a modern Word .docx or use the sample instead.')
       console.error(e)
-    } finally {
-      setParsing(false)
+      setError('Could not load the demo SOP. Refresh the page and try again.')
+      setLoading(false)
     }
-  }
-
-  const openSample = () => {
-    onEnter(null)  // null = use built-in Ariba sample
-  }
-
-  const onDragOver = (e) => { e.preventDefault(); setDragging(true) }
-  const onDragLeave = () => setDragging(false)
-  const onDrop = (e) => {
-    e.preventDefault()
-    setDragging(false)
-    handleFile(e.dataTransfer.files?.[0])
   }
 
   return (
@@ -78,50 +69,38 @@ export default function Landing({ onEnter }) {
             </span>
           </h1>
           <p className="text-[14px] text-slate-600 max-w-xl mx-auto mb-8 leading-relaxed">
-            Upload a TransitionSmart-generated .docx and open it in a Word-like editor with intelligent
+            Open the Ariba Supplier Management SOP in a Word-like editor with intelligent
             fix-in-place actions, confidence-driven navigation, and real-time review telemetry.
           </p>
 
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".docx"
-            className="hidden"
-            onChange={(e) => handleFile(e.target.files?.[0])}
-          />
-
           <button
-            onClick={() => fileInputRef.current?.click()}
-            onDragOver={onDragOver}
-            onDragLeave={onDragLeave}
-            onDrop={onDrop}
-            disabled={parsing}
-            className={`w-full border-2 border-dashed rounded-xl p-10 text-center transition-all cursor-pointer group ${
-              dragging
-                ? 'border-brand-500 bg-brand-50 shadow-inner-sm'
-                : parsing
+            onClick={openDemo}
+            disabled={loading}
+            className={`w-full rounded-xl p-10 text-center transition-all group border-2 ${
+              loading
                 ? 'border-brand-300 bg-brand-50/50'
-                : 'border-slate-300 bg-gradient-to-br from-slate-50 to-sky-50 hover:border-brand-500 hover:from-sky-50 hover:to-white'
+                : 'border-brand-200 bg-gradient-to-br from-brand-50 to-sky-50 hover:border-brand-500 hover:shadow-[0_10px_30px_rgba(37,99,235,0.15)]'
             }`}
           >
-            {parsing ? (
+            {loading ? (
               <>
                 <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-brand-500 to-brand-600 rounded-2xl flex items-center justify-center text-white shadow-[0_10px_25px_rgba(37,99,235,0.35)]">
                   <Loader2 size={26} strokeWidth={2.25} className="animate-spin" />
                 </div>
-                <div className="text-[16px] font-semibold text-slate-900 mb-1">Parsing your document…</div>
+                <div className="text-[16px] font-semibold text-slate-900 mb-1">Loading the demo SOP…</div>
                 <div className="text-[12px] text-slate-500">Reading structure, styles, and images</div>
               </>
             ) : (
               <>
                 <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-brand-500 to-brand-600 rounded-2xl flex items-center justify-center text-white shadow-[0_10px_25px_rgba(37,99,235,0.35)] group-hover:scale-105 transition-transform">
-                  <Upload size={26} strokeWidth={2.25} />
+                  <FileCheck2 size={26} strokeWidth={2.25} />
                 </div>
-                <div className="text-[16px] font-semibold text-slate-900 mb-1">
-                  Drop your SOP <span className="font-mono text-[15px]">.docx</span> here
+                <div className="text-[17px] font-semibold text-slate-900 mb-1">
+                  Open Ariba Supplier Management SOP
                 </div>
-                <div className="text-[12px] text-slate-500">
-                  or <b className="text-brand-600">click to browse</b> · TransitionSmart-generated files unlock full AI features
+                <div className="text-[12px] text-slate-500 inline-flex items-center gap-1">
+                  Start reviewing the AI-generated draft
+                  <ArrowRight size={12} className="text-brand-600 group-hover:translate-x-0.5 transition-transform" />
                 </div>
               </>
             )}
@@ -133,30 +112,16 @@ export default function Landing({ onEnter }) {
             </div>
           )}
 
-          <div className="mt-4 flex items-center gap-3">
-            <div className="flex-1 h-px bg-slate-200"></div>
-            <span className="text-[11px] text-slate-400 uppercase tracking-widest">or</span>
-            <div className="flex-1 h-px bg-slate-200"></div>
-          </div>
-
-          <button
-            onClick={openSample}
-            className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[12.5px] font-semibold transition-colors"
-          >
-            <FileCheck2 size={14} className="text-emerald-600" />
-            Open sample: Ariba Supplier Management SOP
-          </button>
-
           <div className="mt-6 grid grid-cols-2 gap-3">
             <OptionCard
               icon={<Video size={16} className="text-purple-600" />}
-              title="Attach source video"
-              desc="Unlocks screenshot regeneration & semantic search"
+              title="Source videos attached"
+              desc="Screenshot regeneration & semantic frame search enabled"
             />
             <OptionCard
               icon={<FileText size={16} className="text-emerald-600" />}
-              title="Attach client template"
-              desc="Locks output to fonts, headers, numbering"
+              title="Ariba template applied"
+              desc="Locked to fonts, headers, numbering from the source"
             />
           </div>
         </div>
@@ -175,8 +140,8 @@ export default function Landing({ onEnter }) {
 
 function OptionCard({ icon, title, desc }) {
   return (
-    <div className="p-3.5 border border-slate-200 rounded-lg bg-white flex gap-3 items-start cursor-pointer hover:border-brand-500 hover:bg-brand-50/50 transition-all group">
-      <div className="w-9 h-9 flex-shrink-0 bg-slate-50 rounded-lg flex items-center justify-center group-hover:bg-white group-hover:shadow-sm transition-all">
+    <div className="p-3.5 border border-slate-200 rounded-lg bg-white flex gap-3 items-start">
+      <div className="w-9 h-9 flex-shrink-0 bg-slate-50 rounded-lg flex items-center justify-center">
         {icon}
       </div>
       <div className="text-left">

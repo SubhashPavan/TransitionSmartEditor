@@ -108,23 +108,33 @@ export default function VideoPlayer({
    */
   const captureSnapshot = useCallback(() => {
     const video = videoRef.current
-    if (!video || video.readyState < 1) return
+    // Always open the sidebar so the reviewer sees SOMETHING happen even if
+    // the frame capture fails (video not loaded, cross-origin taint, etc.).
+    setSidebarOpen(true)
+    if (!video) return
     // Pause so the reviewer's next action doesn't slip past the moment.
     try { video.pause() } catch { /* noop */ }
-    const w = video.videoWidth  || 1280
-    const h = video.videoHeight || 720
-    const canvas = document.createElement('canvas')
-    // Cap thumbnail width at 720 to keep data-URL size reasonable when we
-    // eventually POST it to /api/generate-from-moments.
-    const scale = Math.min(1, 720 / w)
-    canvas.width  = Math.round(w * scale)
-    canvas.height = Math.round(h * scale)
-    const ctx = canvas.getContext('2d')
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.72)
+    let dataUrl = ''
+    try {
+      const w = video.videoWidth  || 1280
+      const h = video.videoHeight || 720
+      const canvas = document.createElement('canvas')
+      // Cap thumbnail width at 720 to keep data-URL size reasonable when we
+      // eventually POST it to /api/generate-from-moments.
+      const scale = Math.min(1, 720 / w)
+      canvas.width  = Math.round(w * scale)
+      canvas.height = Math.round(h * scale)
+      const ctx = canvas.getContext('2d')
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+      dataUrl = canvas.toDataURL('image/jpeg', 0.72)
+    } catch (err) {
+      // Cross-origin video without CORS headers taints the canvas — capture
+      // fails but we still create the moment so the reviewer can jot a note.
+      console.warn('Snapshot capture failed (adding note-only moment):', err)
+    }
     const m = {
       id:       (crypto?.randomUUID?.() || `m-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`),
-      time_sec: video.currentTime,
+      time_sec: video.currentTime || 0,
       dataUrl,
       note:     '',
     }

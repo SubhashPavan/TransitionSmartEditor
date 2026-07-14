@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import {
   GitBranch, ChevronDown, ChevronRight,
-  Sparkles, Pencil, ShieldCheck, Upload, Check, History, Lock,
+  Sparkles, Pencil, ShieldCheck, Check, History, Lock,
 } from 'lucide-react'
 
 /**
@@ -22,12 +22,10 @@ export default function VersionSwitcher({
   current,
   versions,
   onSelect,
-  onUploadApproved,
 }) {
   const [open, setOpen] = useState(false)
   const [checkpointsExpanded, setCheckpointsExpanded] = useState(true)
   const ref = useRef(null)
-  const fileRef = useRef(null)
 
   useEffect(() => {
     const onDoc = (e) => {
@@ -126,25 +124,6 @@ export default function VersionSwitcher({
             )}
           </div>
 
-          <div className="border-t border-slate-100 p-1.5">
-            <input
-              ref={fileRef}
-              type="file"
-              accept=".docx"
-              className="hidden"
-              onChange={(e) => {
-                if (e.target.files?.[0]) onUploadApproved?.(e.target.files[0])
-                setOpen(false)
-              }}
-            />
-            <button
-              onClick={() => fileRef.current?.click()}
-              className="w-full h-8 rounded-md text-[11.5px] font-semibold text-emerald-700 hover:bg-emerald-50 inline-flex items-center justify-center gap-1.5 transition-colors"
-            >
-              <Upload size={11} />
-              Upload approved (offline) version
-            </button>
-          </div>
         </div>
       )}
     </div>
