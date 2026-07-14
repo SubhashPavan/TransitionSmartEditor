@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import {
-  X, Play, Pause, SkipBack, SkipForward, Scissors, Circle, StickyNote,
-  Sparkles, Volume2, VolumeX, Volume1, Maximize2, Bookmark, Info, ListChecks,
+  X, Play, Pause, SkipBack, SkipForward, StickyNote,
+  Sparkles, Volume2, VolumeX, Volume1, Maximize2, Info, ListChecks,
   Clock, ChevronRight, Camera, Trash2, Keyboard, Settings, Gauge,
 } from 'lucide-react'
 
@@ -24,17 +24,26 @@ import {
  *   onGenerate  — ({ source, startSec, endSec, notes }) => void
  *                 fires when the reviewer hits "Generate SOP from segment"
  */
-export default function VideoPlayer({ source, startTime, autoMarkIn, autoMarkOut, openFullscreen, onClose, onGenerate }) {
+export default function VideoPlayer({
+  source, startTime, openFullscreen, onClose,
+  // Sections available to receive generated steps — [{id, text}]. Provided
+  // by Editor from its LeftRail outline scan.
+  availableSections,
+  // (sourceId, sourceKey, sectionTitle, moments) → Promise — Editor
+  // POSTs to /api/generate-from-moments and inserts the returned steps
+  // under the matching heading in the doc.
+  onGenerate,
+}) {
   const videoRef = useRef(null)
   const trackRef = useRef(null)
   const notesRef = useRef(null)
+  const modalRef = useRef(null)   // outer container — this is what we fullscreen
+                                  // so the moments sidebar stays visible
 
   const [playing, setPlaying] = useState(false)
   const [muted, setMuted]     = useState(false)
   const [time, setTime]       = useState(0)
   const [duration, setDuration] = useState(0)
-  const [markIn, setMarkIn]   = useState(autoMarkIn ?? null)
-  const [markOut, setMarkOut] = useState(autoMarkOut ?? null)
   const [notes, setNotes]     = useState('')
   const [hoverTime, setHoverTime] = useState(null)
   const [scrubbing, setScrubbing] = useState(false)
@@ -45,6 +54,9 @@ export default function VideoPlayer({ source, startTime, autoMarkIn, autoMarkOut
   const [showShortcuts, setShowShortcuts] = useState(false)
   const [sidebarOpen, setSidebarOpen]     = useState(false)
   const [controlsVisible, setControlsVisible] = useState(true)
+  const [targetSection, setTargetSection] = useState('')
+  const [generating, setGenerating]       = useState(false)
+  const [generateError, setGenerateError] = useState(null)
   const [playbackRate, setPlaybackRate]   = useState(1)
   const [showSpeedMenu, setShowSpeedMenu] = useState(false)
   const [volume, setVolume]               = useState(1)         // 0..1
@@ -131,6 +143,34 @@ export default function VideoPlayer({ source, startTime, autoMarkIn, autoMarkOut
     const video = videoRef.current
     if (!video) return
     try { video.currentTime = m.time_sec } catch { /* noop */ }
+  }
+
+  /**
+   * Send the captured moments to the parent's onGenerate handler, which
+   * hits /api/generate-from-moments and inserts the returned steps into
+   * the chosen doc section.
+   */
+  const handleGenerate = async () => {
+    if (!targetSection || moments.length === 0 || !onGenerate) return
+    setGenerating(true); setGenerateError(null)
+    try {
+      await onGenerate({
+        source,
+        sectionTitle: targetSection,
+        moments: moments.map(m => ({
+          time_sec: m.time_sec,
+          note:     m.note,
+          dataUrl:  m.dataUrl,
+        })),
+      })
+      // On success, dismiss the player so the reviewer sees the freshly-inserted
+      // steps in the doc without the video overlay blocking the view.
+      onClose?.()
+    } catch (e) {
+      setGenerateError(String(e?.message || e))
+    } finally {
+      setGenerating(false)
+    }
   }
 
   /** Notes analysis — used to show the reviewer whether their notes will
@@ -228,7 +268,7 @@ export default function VideoPlayer({ source, startTime, autoMarkIn, autoMarkOut
     }
   }, [])
 
-  /* ─── Keyboard shortcuts — YouTube-style + our S/I/O extras ───
+  /* ─── Keyboard shortcuts — YouTube-style + S for snapshot ───
    *   Space / K → play/pause
    *   ← / →     → seek 5s
    *   J / L     → seek 10s
@@ -254,8 +294,6 @@ export default function VideoPlayer({ source, startTime, autoMarkIn, autoMarkOut
       else if (k === 'm' || k === 'M') { e.preventDefault(); toggleMute() }
       else if (k === 'f' || k === 'F') { e.preventDefault(); fullscreen() }
       else if (k === 's' || k === 'S') { e.preventDefault(); captureSnapshot() }
-      else if (k === 'i' || k === 'I') { e.preventDefault(); setMarkIn(time) }
-      else if (k === 'o' || k === 'O') { e.preventDefault(); setMarkOut(time) }
       else if (k === '?' || (k === '/' && e.shiftKey)) {
         e.preventDefault(); setShowShortcuts(s => !s)
       }
@@ -317,19 +355,30 @@ export default function VideoPlayer({ source, startTime, autoMarkIn, autoMarkOut
     clearTimeout(volHideTimer.current)
     volHideTimer.current = setTimeout(() => setVolSliderOpen(false), 400)
   }
-  const fullscreen = () => videoRef.current?.requestFullscreen?.()
+  // Fullscreen the WHOLE modal (video + sidebar), not just the <video>.
+  // Fullscreening just the video hides the moments sidebar behind it, so
+  // pressing S captured the frame but the reviewer couldn't see the panel.
+  const fullscreen = () => {
+    const el = modalRef.current || videoRef.current
+    if (!el) return
+    if (document.fullscreenElement) {
+      try { document.exitFullscreen?.() } catch { /* noop */ }
+    } else {
+      try { el.requestFullscreen?.() } catch { /* denied */ }
+    }
+  }
 
   // Auto-enter fullscreen when the parent asks us to (outline play button).
   // The browser only grants the request if it happens under a user gesture,
-  // and this component mounts on that same click, so we can request it once
-  // metadata is available.
+  // and this component mounts on that same click.
   useEffect(() => {
     if (!openFullscreen) return
-    const el = videoRef.current
-    if (!el) return
-    const go = () => { try { el.requestFullscreen?.() } catch { /* denied */ } }
-    if (el.readyState >= 1) go()
-    else el.addEventListener('loadedmetadata', go, { once: true })
+    const modal = modalRef.current
+    const vid   = videoRef.current
+    if (!modal || !vid) return
+    const go = () => { try { modal.requestFullscreen?.() } catch { /* denied */ } }
+    if (vid.readyState >= 1) go()
+    else vid.addEventListener('loadedmetadata', go, { once: true })
   }, [openFullscreen])
 
   const timeAt = (clientX) => {
@@ -343,11 +392,10 @@ export default function VideoPlayer({ source, startTime, autoMarkIn, autoMarkOut
   }
   const onTrackUp   = () => setScrubbing(false)
 
-  const canGenerate = markIn != null && markOut != null && markOut > markIn
-  const segLen = canGenerate ? markOut - markIn : 0
 
   return (
     <div
+      ref={modalRef}
       className="fixed inset-0 z-[92] bg-black flex animate-fade-in"
       onMouseMove={bumpControls}
     >
@@ -412,17 +460,10 @@ export default function VideoPlayer({ source, startTime, autoMarkIn, autoMarkOut
             className="relative h-1 hover:h-1.5 transition-all bg-white/25 rounded-full cursor-pointer group/track pointer-events-auto"
           >
             <div className="absolute inset-y-0 left-0 bg-brand-500 rounded-full" style={{ width: `${pctOf(time, duration)}%` }} />
-            {markIn != null && markOut != null && markOut > markIn && (
-              <div
-                className="absolute inset-y-0 bg-emerald-400/70"
-                style={{
-                  left:  `${pctOf(markIn,  duration)}%`,
-                  right: `${100 - pctOf(markOut, duration)}%`,
-                }}
-              />
-            )}
-            {markIn  != null && <div className="absolute inset-y-0 w-0.5 bg-emerald-400" style={{ left: `${pctOf(markIn,  duration)}%` }} />}
-            {markOut != null && <div className="absolute inset-y-0 w-0.5 bg-rose-400"    style={{ left: `${pctOf(markOut, duration)}%` }} />}
+            {/* Little brand-blue tick per captured moment — YouTube's chapter markers */}
+            {moments.map(m => (
+              <div key={m.id} className="absolute -top-1 -bottom-1 w-1 bg-white/95 rounded-full" style={{ left: `calc(${pctOf(m.time_sec, duration)}% - 2px)` }} />
+            ))}
             {/* Playhead — becomes visible on hover, always on when scrubbing */}
             <div
               className={`absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-brand-500 shadow ring-2 ring-white transition-opacity ${
@@ -489,31 +530,6 @@ export default function VideoPlayer({ source, startTime, autoMarkIn, autoMarkOut
                 Snapshot
                 <kbd className="ml-0.5 px-1 py-[1px] rounded bg-white/25 text-white text-[10px] font-mono">S</kbd>
               </button>
-              <OverlayPill
-                active={markIn != null}
-                icon={<Bookmark size={12} />}
-                label={markIn != null ? `In · ${formatTime(markIn).split('.')[0]}` : 'Mark In'}
-                title="Mark in (I)"
-                onClick={() => setMarkIn(time)}
-                tone="emerald"
-              />
-              <OverlayPill
-                active={markOut != null}
-                icon={<Scissors size={12} />}
-                label={markOut != null ? `Out · ${formatTime(markOut).split('.')[0]}` : 'Mark Out'}
-                title="Mark out (O)"
-                onClick={() => setMarkOut(time)}
-                tone="rose"
-              />
-              {(markIn != null || markOut != null) && (
-                <button
-                  onClick={() => { setMarkIn(null); setMarkOut(null) }}
-                  className="h-8 px-2 rounded-md text-[11px] font-semibold text-white/70 hover:text-white hover:bg-white/15 transition-colors"
-                  title="Clear segment"
-                >
-                  Clear
-                </button>
-              )}
               {/* Playback speed — YouTube's settings gear collapsed to a
                   single popover with the standard 6 speeds. */}
               <div className="relative">
@@ -560,22 +576,6 @@ export default function VideoPlayer({ source, startTime, autoMarkIn, autoMarkOut
             </div>
           </div>
 
-          {/* Segment-ready hint — sits above the transport when both marks are set */}
-          {canGenerate && (
-            <div className="mt-2 flex items-center gap-2 text-[11.5px] text-white/90 pointer-events-auto">
-              <Scissors size={12} className="text-emerald-300" />
-              <b className="text-white">Segment ready:</b>
-              <span className="font-mono tabular-nums text-emerald-300">{formatTime(markIn).split('.')[0]} → {formatTime(markOut).split('.')[0]}</span>
-              <span className="text-white/60">({formatTime(segLen).split('.')[0]})</span>
-              <button
-                onClick={() => onGenerate?.({ source, startSec: markIn, endSec: markOut, notes, moments })}
-                className="ml-auto h-8 px-3 rounded-md bg-brand-500 hover:bg-brand-600 text-white text-[12px] font-semibold inline-flex items-center gap-1.5 shadow transition-colors"
-              >
-                <Sparkles size={12} />
-                Generate SOP from segment
-              </button>
-            </div>
-          )}
         </div>
       </div>
 
@@ -628,69 +628,48 @@ export default function VideoPlayer({ source, startTime, autoMarkIn, autoMarkOut
             )}
           </div>
 
-          {/* Notes header */}
-          <div className="px-4 py-2.5 flex items-center gap-2 border-b border-amber-100 bg-amber-50/70 flex-shrink-0">
-            <StickyNote size={14} className="text-amber-600" />
-            <div className="flex-1 min-w-0">
-              <div className="text-[12px] font-semibold text-slate-900">Reviewer notes</div>
-              <div className="text-[10.5px] text-slate-600">Free-form guidance on top of the captured moments.</div>
-            </div>
-          </div>
-
-          <div className="px-3 py-2 border-b border-amber-100 flex items-center gap-1.5 bg-amber-50/40 flex-shrink-0">
-            <button
-              onClick={insertTimestampInNotes}
-              className="h-7 px-2 rounded-md text-[11px] font-semibold text-amber-800 hover:bg-amber-100 border border-amber-200 inline-flex items-center gap-1 transition-colors"
-              title="Insert current time at cursor"
+          {/* Generate SOP steps — spacer + picker + button pinned to bottom */}
+          <div className="mt-auto flex-shrink-0 p-3 border-t border-slate-100 bg-slate-50/60 space-y-2">
+            <label className="block text-[10px] font-bold text-slate-500 tracking-widest uppercase">
+              Insert into section
+            </label>
+            <select
+              value={targetSection}
+              onChange={(e) => setTargetSection(e.target.value)}
+              className="w-full h-9 rounded-md border border-slate-200 bg-white px-2 text-[12px] text-slate-800 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
             >
-              <Clock size={11} />
-              @{formatTime(time).split('.')[0]}
-            </button>
+              <option value="">— Pick a section —</option>
+              {(availableSections || []).map(s => (
+                <option key={s.id} value={s.text}>
+                  {s.text.length > 60 ? s.text.slice(0, 57) + '…' : s.text}
+                </option>
+              ))}
+            </select>
+            {generateError && (
+              <div className="px-2 py-1.5 rounded bg-red-50 border border-red-200 text-[11px] text-red-800">
+                {generateError}
+              </div>
+            )}
             <button
-              onClick={() => setNotes(n => (n && !n.endsWith('\n') ? n + '\n' : n) + `${notesInsight.stepLines + 1}. `)}
-              className="h-7 px-2 rounded-md text-[11px] font-semibold text-slate-700 hover:bg-slate-100 border border-slate-200 inline-flex items-center gap-1 transition-colors"
-              title="Add a new numbered step line"
+              disabled={!targetSection || moments.length === 0 || generating}
+              onClick={handleGenerate}
+              className="w-full h-10 rounded-md bg-brand-500 hover:bg-brand-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-[13px] font-semibold inline-flex items-center justify-center gap-1.5 shadow transition-colors"
             >
-              <ListChecks size={11} />
-              Step {notesInsight.stepLines + 1}
-            </button>
-            <span className="ml-auto text-[10px] text-slate-500 tabular-nums whitespace-nowrap">
-              {notesInsight.words}w · {notesInsight.stampCount}⏱
-            </span>
-          </div>
-
-          <textarea
-            ref={notesRef}
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder={
-`Example — the AI will follow your structure:
-
-1. Click the Company Profile tab
-2. Enter the vendor's name in the search box
-3. Save — the confirmation banner appears
-
-Add timestamps with the ⏱ button so the AI can cite exactly what to show in each step.`
-            }
-            className="flex-1 min-h-0 p-3 bg-transparent text-[12.5px] text-slate-900 placeholder:text-slate-400 outline-none resize-none leading-snug"
-          />
-
-          <div className={`px-3 py-2 border-t text-[10.5px] leading-snug flex items-start gap-2 flex-shrink-0 ${
-            notesInsight.hasStructure
-              ? 'border-emerald-200 bg-emerald-50/60 text-emerald-900'
-              : notesInsight.words > 0
-              ? 'border-amber-200 bg-amber-50/70 text-amber-900'
-              : 'border-slate-200 bg-slate-50/60 text-slate-600'
-          }`}>
-            <Info size={11} className="mt-0.5 flex-shrink-0" />
-            <div className="flex-1">
-              {notesInsight.hasStructure ? (
-                <><b>Great</b> — {notesInsight.stepLines || notesInsight.bulletLines} structured line{(notesInsight.stepLines || notesInsight.bulletLines) === 1 ? '' : 's'} detected. The AI will follow your outline.</>
-              ) : notesInsight.words > 0 ? (
-                <><b>Tip:</b> Number your notes (1., 2., 3.) so the AI generates matching numbered steps.</>
+              {generating ? (
+                <>
+                  <div className="w-3.5 h-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                  Generating steps…
+                </>
               ) : (
-                <><b>How this works:</b> Snap moments with <kbd className="px-1 py-0.5 rounded bg-white border border-slate-200 text-[9.5px] font-mono">S</kbd> and jot what to say about each. Optionally number your notes.</>
+                <>
+                  <Sparkles size={13} />
+                  Generate SOP steps
+                  {moments.length > 0 && <span className="text-white/80 text-[11px]">· {moments.length} moment{moments.length === 1 ? '' : 's'}</span>}
+                </>
               )}
+            </button>
+            <div className="text-[10.5px] text-slate-500 leading-snug">
+              Gemini turns each captured moment (screenshot + your note) into an imperative step and drops the batch into the chosen section.
             </div>
           </div>
         </div>
@@ -764,7 +743,6 @@ function ShortcutOverlay({ onClose }) {
     ['Mute / Unmute',       ['M']],
     ['Fullscreen',          ['F']],
     ['Snapshot moment',     ['S']],
-    ['Mark in / Mark out',  ['I / O']],
     ['Toggle cheatsheet',   ['?']],
     ['Close player',        ['Esc']],
   ]

@@ -1,0 +1,60 @@
+databases: []
+
+services:
+  # FastAPI backend — served by uvicorn on Render's $PORT.
+  # All secrets (Azure OpenAI/Blob, Gemini) are set in the Render dashboard
+  # after the service is created — they are NOT committed to the repo.
+  - type: web
+    name: ts-sop-editor-api
+    runtime: python
+    plan: free
+    region: oregon
+    rootDir: backend
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11"
+      - key: API_HOST
+        value: 0.0.0.0
+      # CORS_ORIGINS is set from the dashboard once you know your Vercel URL,
+      # e.g. https://ts-sop-editor.vercel.app,http://localhost:5190
+      - key: CORS_ORIGINS
+        sync: false
+      # Azure OpenAI
+      - key: AZURE_OPENAI_ENDPOINT
+        sync: false
+      - key: AZURE_OPENAI_KEY
+        sync: false
+      - key: AZURE_OPENAI_DEPLOYMENT
+        value: gpt-4o
+      - key: AZURE_OPENAI_API_VERSION
+        value: 2025-01-01-preview
+      - key: AZURE_OPENAI_EMBEDDING_DEPLOYMENT
+        value: text-embedding-3-large
+      - key: AZURE_OPENAI_EMBEDDING_DIMENSIONS
+        value: "3072"
+      # Azure Blob Storage
+      - key: BLOB_CONNECTION_STRING
+        sync: false
+      - key: BLOB_CONTAINER
+        value: video-demo
+      - key: BLOB_PREFIX
+        value: sop-editor
+      # Gemini
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
+      # Qdrant (optional — leave blank to use the local pickled index)
+      - key: QDRANT_URL
+        sync: false
+      - key: QDRANT_API_KEY
+        sync: false
+      # LLM tuning
+      - key: LLM_TEMPERATURE
+        value: "0.2"
+      - key: LLM_MAX_TOKENS
+        value: "1200"

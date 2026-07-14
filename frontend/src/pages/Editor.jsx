@@ -108,6 +108,7 @@ import SourcesPanel from '../components/SourcesPanel'
 import VideoPlayer from '../components/VideoPlayer'
 import GenerateFromVideoModal from '../components/GenerateFromVideoModal'
 import * as api from '../lib/api'
+import { exportAsWord, exportAsPdf } from '../lib/exportDoc'
 import sopData from '../data/sopContent.json'
 
 /**
@@ -334,6 +335,37 @@ export default function Editor({ uploadedDoc, onExit }) {
   }, [activeShareToken])
 
   const unresolvedFeedbackCount = reviewerFeedback.filter(c => !c.resolved).length
+
+  /**
+   * Walk the current doc canvas and return a flat list of {id, text} for
+   * every heading — h1..h4 plus paragraphs styled as headings. Used by
+   * VideoPlayer's section picker so the reviewer can drop generated steps
+   * into any existing section without re-typing the heading name.
+   */
+  const collectHeadings = () => {
+    const host = canvasHostEl()
+    if (!host) return []
+    const seen = new Set()
+    const out = []
+    const nodes = host.querySelectorAll(
+      'h1, h2, h3, h4, p[class*="heading" i], div[class*="heading" i], p[class*="title" i]'
+    )
+    for (const el of nodes) {
+      if (seen.has(el)) continue
+      // Strip injected .dp-play-section text if present.
+      let text = ''
+      if (el.querySelector?.('.dp-play-section')) {
+        const c = el.cloneNode(true); c.querySelectorAll('.dp-play-section').forEach(x => x.remove())
+        text = (c.textContent || '').trim()
+      } else {
+        text = (el.textContent || '').trim()
+      }
+      if (!text) continue
+      seen.add(el)
+      out.push({ id: el.id || null, text: text.length > 120 ? text.slice(0, 117) + '…' : text })
+    }
+    return out
+  }
 
   /* ─── Cross-block-merge helpers (used by Backspace/Delete at block boundary) ─── */
 
@@ -1093,6 +1125,59 @@ export default function Editor({ uploadedDoc, onExit }) {
     setPlayingVideo(null)
   }
 
+  /**
+   * Snapshot-driven flow: the reviewer captured a stream of moments in the
+   * video player, picked a target section, and hit Generate. We POST the
+   * moments (screenshots + notes) to Gemini and insert the returned steps
+   * as new paragraphs under the chosen heading. Snapshotting before, plus
+   * pushHistory bookends, keeps undo/redo intact.
+   */
+  const handleGenerateFromMoments = async ({ source, sectionTitle, moments }) => {
+    if (!moments?.length || !sectionTitle) throw new Error('Missing moments or section')
+    const res = await api.generateFromMoments({
+      sourceId:     source?.id,
+      sourceKey:    source?.name || source?.id,
+      sectionTitle,
+      moments,
+    })
+    const steps = (res?.steps || []).filter(s => s && s.trim())
+    if (!steps.length) throw new Error('Gemini returned no steps')
+
+    // Find the heading in the canvas whose text matches sectionTitle.
+    const host = canvasHostEl()
+    if (!host) throw new Error('Editor canvas not mounted')
+    const norm = (s) => (s || '').trim().replace(/\s+/g, ' ').toLowerCase()
+    const target = norm(sectionTitle)
+    const headings = Array.from(host.querySelectorAll('h1, h2, h3, h4, p[class*="heading" i], div[class*="heading" i]'))
+    // The outline scan already strips .dp-play-section text — do the same here.
+    const findText = (el) => {
+      if (!el.querySelector?.('.dp-play-section')) return (el.textContent || '').trim()
+      const c = el.cloneNode(true); c.querySelectorAll('.dp-play-section').forEach(x => x.remove())
+      return (c.textContent || '').trim()
+    }
+    const heading = headings.find(h => norm(findText(h)) === target)
+      || headings.find(h => norm(findText(h)).startsWith(target))
+    if (!heading) throw new Error(`No heading matching "${sectionTitle}"`)
+
+    // Snapshot before the mutation for undo.
+    pushHistory(false)
+
+    // Insert steps right after the heading, before the next heading (or at end).
+    let anchor = heading
+    const doc = heading.ownerDocument
+    for (const step of steps) {
+      const p = doc.createElement('p')
+      p.className = 'ts-inserted'   // mark as human-generated so track-changes highlights it
+      p.textContent = step
+      anchor.parentNode.insertBefore(p, anchor.nextSibling)
+      anchor = p
+    }
+    heading.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    pushHistory(false)
+    markEdited(heading.getAttribute('data-block-id') || 'moments-generated')
+    return res
+  }
+
   /** Called from GenerateFromVideoModal when the reviewer confirms.
    *  Sends the segment + notes to the backend, which forwards to Gemini
    *  with the video attached. Returns concrete on-screen steps. */
@@ -1419,11 +1504,10 @@ export default function Editor({ uploadedDoc, onExit }) {
         <VideoPlayer
           source={playingVideo.source}
           startTime={playingVideo.startTime}
-          autoMarkIn={playingVideo.autoMarkIn}
-          autoMarkOut={playingVideo.autoMarkOut}
           openFullscreen={playingVideo.fullscreen}
+          availableSections={collectHeadings()}
           onClose={() => setPlayingVideo(null)}
-          onGenerate={handleGenerateFromSegment}
+          onGenerate={handleGenerateFromMoments}
         />
       )}
       {genFromVideo && (
@@ -1450,8 +1534,18 @@ export default function Editor({ uploadedDoc, onExit }) {
       <ExportPrompt
         open={exportOpen}
         onClose={() => setExportOpen(false)}
-        onConfirm={() => setExportOpen(false)}
         editStats={editStats}
+        onExport={(format) => {
+          const host = canvasHostEl()
+          const html = host?.innerHTML || ''
+          const title = displayDoc?.fileName || 'SOP Document'
+          if (!html) {
+            alert('Nothing to export yet — the document is empty.')
+            return
+          }
+          if (format === 'pdf') exportAsPdf({ html, title })
+          else exportAsWord({ html, title })
+        }}
       />
       <CommentsPanel open={commentsOpen} onClose={() => setCommentsOpen(false)} />
       <CommentMargin

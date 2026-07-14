@@ -204,3 +204,113 @@ def generate_segment_steps(
         "model":      config.GEMINI_MODEL,
     }
     return text, meta
+
+
+import base64 as _b64
+import re as _re
+
+
+def _decode_data_url(data_url: str) -> tuple[bytes, str] | None:
+    """`data:image/jpeg;base64,AAA...` → (bytes, mime_type). None on garbage."""
+    if not data_url or not data_url.startswith("data:"):
+        return None
+    m = _re.match(r"^data:([^;,]+)(;base64)?,(.*)$", data_url, _re.DOTALL)
+    if not m:
+        return None
+    mime = m.group(1) or "application/octet-stream"
+    is_b64 = bool(m.group(2))
+    payload = m.group(3) or ""
+    try:
+        raw = _b64.b64decode(payload, validate=False) if is_b64 else payload.encode("utf-8")
+    except Exception:
+        return None
+    return raw, mime
+
+
+def generate_steps_from_moments(
+    *,
+    source_id: str | None,
+    section_title: str,
+    moments: list[dict],           # [{time_sec, note, image_data_url}]
+    transcript_snippets: list[dict] | None = None,   # [{time_sec, text}] — optional context around each moment
+) -> tuple[str, dict]:
+    """
+    Given a list of user-captured moments (screenshots + notes) for a section,
+    have Gemini write imperative SOP steps that describe what to do at each
+    moment, using the transcript snippets for background language.
+
+    Pure text prompt + inline image parts — no video file upload needed for
+    this path, since the user has already curated exactly which frames matter.
+    """
+    if not moments:
+        raise ValueError("moments list is empty")
+
+    parts: list = []
+    prompt_lines = [
+        "You are an SOP writer. A reviewer has captured a series of moments (screenshots + notes) while watching a knowledge-transfer video.",
+        "Turn those moments into an ordered SOP for the section below. Each moment is one step — in order. Ground every step in what's visible in the accompanying screenshot AND what the reviewer said in their note.",
+        "",
+        f"Section: {section_title}",
+    ]
+    if source_id:
+        prompt_lines.append(f"Source video: {source_id}")
+    prompt_lines += [
+        "",
+        f"Number of moments: {len(moments)}",
+        "",
+        "Requirements:",
+        "  • Write one imperative step paragraph per moment, in order.",
+        "  • Start each with 'Step N: <short title>.' then 1–3 sentences of the how-to.",
+        "  • Reference on-screen elements visible in the screenshot (button names, tab names, field labels).",
+        "  • Weave in the reviewer's note verbatim if it clarifies the intent.",
+        "  • Cite the video timestamp inline like (video @ MM:SS).",
+        "  • End the whole list with a verification step: 'Expected result: …'.",
+        "  • Return plain text only. No preamble, no markdown fences.",
+    ]
+    parts.append(gtypes.Part(text="\n".join(prompt_lines)))
+
+    def _fmt(t: float) -> str:
+        s = int(t)
+        return f"{s // 60}:{s % 60:02d}"
+
+    # For each moment: prose label + inline image + note + transcript context.
+    for i, m in enumerate(moments, start=1):
+        t = float(m.get("time_sec") or 0)
+        note = (m.get("note") or "").strip()
+        header = [f"\n— MOMENT {i} @ {_fmt(t)} —"]
+        if note:
+            header.append(f"Reviewer note: {note}")
+        # Pull the transcript window closest to this timestamp
+        if transcript_snippets:
+            near = min(
+                (s for s in transcript_snippets if s.get("text")),
+                key=lambda s: abs(float(s.get("time_sec") or 0) - t),
+                default=None,
+            )
+            if near:
+                header.append(f"Transcript around this moment: {(near.get('text') or '')[:400]}")
+        parts.append(gtypes.Part(text="\n".join(header)))
+
+        decoded = _decode_data_url(m.get("image_data_url") or "")
+        if decoded:
+            raw, mime = decoded
+            parts.append(gtypes.Part.from_bytes(data=raw, mime_type=mime))
+
+    contents = [gtypes.Content(role="user", parts=parts)]
+    resp = _cli().models.generate_content(
+        model=config.GEMINI_MODEL,
+        contents=contents,
+        config=gtypes.GenerateContentConfig(
+            temperature=config.LLM_TEMPERATURE,
+            max_output_tokens=2000,
+        ),
+    )
+    text = (resp.text or "").strip()
+    meta = {
+        "model":            config.GEMINI_MODEL,
+        "moment_count":     len(moments),
+        "section_title":    section_title,
+        "source_id":        source_id,
+        "prompt_preview":   parts[0].text[:400] if parts and hasattr(parts[0], 'text') else '',
+    }
+    return text, meta

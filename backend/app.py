@@ -32,9 +32,13 @@ import chat as chat_mod
 import rag as rag_mod
 
 app = FastAPI(title="sop-editor backend", version="0.1.0")
+# CORS_ORIGINS from env is the explicit allowlist; CORS_ORIGIN_REGEX (also
+# from env, optional) lets Vercel preview URLs like
+# https://ts-sop-editor-git-*.vercel.app match via a single pattern.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=config.CORS_ORIGINS,
+    allow_origin_regex=config.CORS_ORIGIN_REGEX or None,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -401,6 +405,74 @@ def update_share(token: str, req: UpdateShareReq):
     if not ok:
         raise HTTPException(404, "Share not found")
     return {"token": token, "ok": True}
+
+
+# ─────────────────────────────────────────────────────────
+# Moments-driven generation
+# The video player captures a stream of {time_sec, note, image_data_url}
+# moments. This endpoint sends the whole batch to Gemini alongside the
+# transcript snippets around each moment and returns imperative SOP steps
+# ready to insert under a chosen section heading.
+# ─────────────────────────────────────────────────────────
+class MomentIn(BaseModel):
+    time_sec: float
+    note: str = ""
+    image_data_url: str
+
+
+class MomentsGenReq(BaseModel):
+    source_id:     str | None = None       # for pulling transcript context
+    source_key:    str | None = None       # e.g. "ariba_part01" if different from source_id
+    section_title: str
+    moments:       list[MomentIn]
+
+
+@app.post("/api/generate-from-moments")
+def generate_from_moments(req: MomentsGenReq):
+    if not req.moments:
+        raise HTTPException(422, "moments list is empty")
+    if not (req.section_title or "").strip():
+        raise HTTPException(422, "section_title is empty")
+    if not config.GEMINI_API_KEY:
+        raise HTTPException(500, "GEMINI_API_KEY is not configured on the backend")
+
+    # Pull transcript snippets around each moment so Gemini has context beyond the
+    # reviewer's terse notes. Falls back gracefully if no transcript is indexed.
+    snippets: list[dict] = []
+    try:
+        rag_mod.ensure_built()
+        # Cheap window: for each moment, take chunks whose time range overlaps ±30s.
+        source_key = req.source_key or (req.source_id or '').split('.')[0]
+        for m in req.moments:
+            target = m.time_sec
+            best = None
+            best_gap = 1e9
+            for c in rag_mod._INSTANCE.chunks:   # direct access to the loaded chunks
+                if source_key and c.source_key != source_key:
+                    continue
+                if c.start <= target <= c.end or abs((c.start + c.end)/2 - target) < 30:
+                    gap = abs((c.start + c.end)/2 - target)
+                    if gap < best_gap:
+                        best_gap = gap
+                        best = c
+            if best:
+                snippets.append({"time_sec": (best.start + best.end)/2, "text": best.text})
+    except Exception:
+        snippets = []
+
+    try:
+        text, meta = gm.generate_steps_from_moments(
+            source_id=req.source_id,
+            section_title=req.section_title,
+            moments=[m.model_dump() for m in req.moments],
+            transcript_snippets=snippets,
+        )
+    except Exception as e:
+        raise HTTPException(502, f"Gemini error: {e}") from e
+
+    # Split into paragraphs so the frontend can insert each step as its own <p>.
+    steps = [line.strip() for line in text.split("\n") if line.strip()]
+    return {"steps": steps, "raw": text, "meta": meta}
 
 
 # ─────────────────────────────────────────────────────────

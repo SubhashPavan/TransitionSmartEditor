@@ -1,4 +1,5 @@
-import { X, Download, Sparkles, AlertTriangle, TrendingUp, ArrowRight } from 'lucide-react'
+import { useState } from 'react'
+import { X, Download, Sparkles, AlertTriangle, TrendingUp, ArrowRight, FileText, FileType2 } from 'lucide-react'
 
 /**
  * Export dialog that nudges the reviewer to actually use the editor
@@ -9,7 +10,7 @@ import { X, Download, Sparkles, AlertTriangle, TrendingUp, ArrowRight } from 'lu
  *   - 5–20 edits   → encourage more ("you've made a start — dig deeper")
  *   - > 20 edits   → celebrate ("great — one more pass?")
  */
-export default function ExportPrompt({ open, onClose, onConfirm, editStats }) {
+export default function ExportPrompt({ open, onClose, onExport, editStats }) {
   if (!open) return null
 
   const edits = editStats?.edits ?? 0
@@ -19,6 +20,19 @@ export default function ExportPrompt({ open, onClose, onConfirm, editStats }) {
 
   const level = edits < 5 ? 'low' : edits < 20 ? 'mid' : 'high'
   const config = COPY[level]
+
+  const [busy, setBusy] = useState(null) // 'pdf' | 'docx' | null
+
+  const doExport = async (format) => {
+    if (busy) return
+    setBusy(format)
+    try {
+      await Promise.resolve(onExport?.(format))
+      onClose?.()
+    } finally {
+      setBusy(null)
+    }
+  }
 
   return (
     <div
@@ -82,23 +96,34 @@ export default function ExportPrompt({ open, onClose, onConfirm, editStats }) {
             </div>
           )}
 
-          {/* Buttons */}
-          <div className="flex gap-2">
+          {/* Download actions */}
+          <div className="mb-3 text-[10px] font-bold text-slate-400 tracking-widest uppercase">Download</div>
+          <div className="grid grid-cols-2 gap-2 mb-3">
             <button
-              onClick={onClose}
-              className="flex-1 h-10 rounded-lg bg-brand-500 text-white text-[12.5px] font-semibold hover:bg-brand-600 shadow-sm shadow-brand-500/30 transition-all inline-flex items-center justify-center gap-2"
+              onClick={() => doExport('docx')}
+              disabled={!!busy}
+              className="h-11 rounded-lg border border-slate-200 bg-white hover:bg-brand-50/60 hover:border-brand-300 transition-all inline-flex items-center justify-center gap-2 text-[13px] font-semibold text-slate-800 disabled:opacity-60"
             >
-              <Sparkles size={13} />
-              Stay & keep editing
+              <FileType2 size={15} className="text-brand-600" />
+              {busy === 'docx' ? 'Preparing…' : 'Word (.doc)'}
             </button>
             <button
-              onClick={onConfirm}
-              className="h-10 px-4 rounded-lg text-slate-700 text-[12.5px] font-semibold hover:bg-slate-100 transition-colors inline-flex items-center gap-1.5"
+              onClick={() => doExport('pdf')}
+              disabled={!!busy}
+              className="h-11 rounded-lg border border-slate-200 bg-white hover:bg-brand-50/60 hover:border-brand-300 transition-all inline-flex items-center justify-center gap-2 text-[13px] font-semibold text-slate-800 disabled:opacity-60"
             >
-              <Download size={13} />
-              Export anyway
+              <FileText size={15} className="text-rose-600" />
+              {busy === 'pdf' ? 'Opening print…' : 'PDF'}
             </button>
           </div>
+
+          <button
+            onClick={onClose}
+            className="w-full h-9 rounded-lg text-slate-600 text-[12px] font-semibold hover:bg-slate-100 transition-colors inline-flex items-center justify-center gap-2"
+          >
+            <Sparkles size={12} />
+            Not yet — keep editing
+          </button>
         </div>
       </div>
     </div>

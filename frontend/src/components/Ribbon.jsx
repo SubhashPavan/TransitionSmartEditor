@@ -1101,7 +1101,15 @@ function BigBtn({ icon, label, chevron, onClick, tone, active }) {
     : 'text-slate-900 hover:bg-slate-100'
   return (
     <button
-      onMouseDown={(e) => { e.preventDefault(); onClick?.() }}
+      // onMouseDown only preventDefaults so the doc caret / text selection
+      // isn't lost when the ribbon button steals focus. The actual action
+      // fires on onClick so that state changes (like opening a modal) don't
+      // happen mid-mousedown — otherwise a modal backdrop can appear under
+      // the cursor before the click event fires, and the click bubbles into
+      // the backdrop's outside-click handler, dismissing the modal you just
+      // opened. That was the "had to click Analytics multiple times" bug.
+      onMouseDown={(e) => e.preventDefault()}
+      onClick={() => onClick?.()}
       className={`min-w-[62px] px-2 py-1 rounded flex flex-col items-center gap-1 transition-colors ${style}`}
     >
       <div className="flex items-center [&_svg]:stroke-[1.5]">{icon}</div>

@@ -20,6 +20,9 @@ CORS_ORIGINS = [
     for o in os.getenv("CORS_ORIGINS", "http://localhost:5190").split(",")
     if o.strip()
 ]
+# Optional single regex to match Vercel preview URLs, e.g.
+# https://ts-sop-editor-git-.*\.vercel\.app
+CORS_ORIGIN_REGEX = os.getenv("CORS_ORIGIN_REGEX", "").strip()
 
 # ── Azure Blob ──────────────────────────────────────────
 BLOB_CONNECTION_STRING = os.getenv("BLOB_CONNECTION_STRING", "")

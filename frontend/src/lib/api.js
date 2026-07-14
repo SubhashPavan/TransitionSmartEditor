@@ -4,7 +4,11 @@
  * base-URL logic live in one place.
  */
 
-const BASE = '/api'
+// In dev, calls are proxied through Vite to the local FastAPI.
+// In prod (Vercel), set VITE_API_BASE to the Render backend URL, e.g.
+// https://ts-sop-editor-api.onrender.com/api. Falls back to /api so
+// local `vite preview` and dev still work with the Vite proxy.
+const BASE = (import.meta.env.VITE_API_BASE || '/api').replace(/\/+$/, '')
 
 async function req(path, init = {}) {
   const url = `${BASE}${path}`
@@ -62,6 +66,28 @@ export async function generateFromSegment({ sourceId, startSec, endSec, notes, t
       end_sec: endSec,
       notes: notes || '',
       target_context: targetContext || null,
+    }),
+  })
+}
+
+/**
+ * POST /api/generate-from-moments — send captured moments (screenshots +
+ * per-moment notes) to Gemini, which weaves them together with the
+ * transcript context and returns imperative SOP steps for the given
+ * section heading.
+ */
+export async function generateFromMoments({ sourceId, sourceKey, sectionTitle, moments }) {
+  return req('/generate-from-moments', {
+    method: 'POST',
+    body: JSON.stringify({
+      source_id:     sourceId || null,
+      source_key:    sourceKey || null,
+      section_title: sectionTitle,
+      moments:       moments.map(m => ({
+        time_sec:       m.time_sec,
+        note:           m.note || '',
+        image_data_url: m.dataUrl || m.image_data_url || '',
+      })),
     }),
   })
 }
