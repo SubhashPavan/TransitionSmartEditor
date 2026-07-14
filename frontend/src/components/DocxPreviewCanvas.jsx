@@ -485,7 +485,7 @@ export default function DocxPreviewCanvas({
   selection = [],
   onSelect,
   editedBlocks,
-  onBlockAction,        // (action: 'rewrite'|'rephrase'|'add-detail'|'move'|'delete', block: { id, text, kind }) => void
+  onBlockAction,        // (action: 'edit'|'move'|'delete'|'merge', block: { id, text, kind }) => void
   onBeforeMutation,     // () => void — called right before ANY structural DOM change so parent can snapshot for undo
   getSectionVideo,      // (headingText: string) => { source_id, start_sec, end_sec, source_name } | null
   onPlaySectionVideo,   // ({ sourceId, sourceName, startSec, endSec }) => void
@@ -924,9 +924,7 @@ export default function DocxPreviewCanvas({
                 <div className="w-px h-4 bg-white/15 mx-0.5"></div>
               </>
             )}
-            <ChipBtn onClick={() => dispatchBlockAction('rewrite')}    icon={<Wand2 size={12} />}        label="Rewrite"    tone="purple" />
-            <ChipBtn onClick={() => dispatchBlockAction('rephrase')}   icon={<RefreshCw size={12} />}    label="Rephrase"   tone="brand" />
-            <ChipBtn onClick={() => dispatchBlockAction('add-detail')} icon={<Plus size={12} />}         label="Add detail" tone="emerald" />
+            <ChipBtn onClick={() => dispatchBlockAction('edit')}       icon={<Wand2 size={12} />}        label="AI Edit"    tone="brand" />
             {isMulti && (
               <ChipBtn onClick={() => dispatchBlockAction('merge')}    icon={<Combine size={12} />}     label="Merge"      tone="amber" />
             )}

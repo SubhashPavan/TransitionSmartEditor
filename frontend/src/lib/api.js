@@ -93,19 +93,20 @@ export async function generateFromMoments({ sourceId, sourceKey, sectionTitle, m
 }
 
 /**
- * POST /api/ai/block-action — GPT-4o rewrite / rephrase / add-detail on a
- * single block. Matches the AIActionModal's onGenerate contract: string in,
- * string out.
+ * POST /api/ai/block-action — GPT-4o driven single-block edit. The frontend
+ * only ever sends `action: "edit"` now; the legacy actions still work on the
+ * server side for external callers.
  */
-export async function aiBlockAction({ action, blockText, blockKind, tone, length, missingHint }) {
+export async function aiBlockAction({ action, blockText, blockKind, tone, length, instruction, missingHint }) {
   const r = await req('/ai/block-action', {
     method: 'POST',
     body: JSON.stringify({
-      action,
-      block_text: blockText,
-      block_kind: blockKind || 'paragraph',
-      tone: tone || null,
-      length: length || null,
+      action:       action || 'edit',
+      block_text:   blockText,
+      block_kind:   blockKind || 'paragraph',
+      tone:         tone || null,
+      length:       length || null,
+      instruction:  instruction || null,
       missing_hint: missingHint || null,
     }),
   })

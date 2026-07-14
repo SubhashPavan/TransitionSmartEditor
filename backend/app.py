@@ -186,12 +186,15 @@ def generate_from_segment(req: SegmentReq):
 # Block action — Rewrite / Rephrase / Add detail
 # ─────────────────────────────────────────────────────────
 class BlockActionReq(BaseModel):
-    action: Literal["rewrite", "rephrase", "add-detail"]
+    # `edit` is the unified action (frontend uses this exclusively). The legacy
+    # names still work so any external caller doesn't break.
+    action: Literal["edit", "rewrite", "rephrase", "add-detail"]
     block_text: str
     block_kind: str = "paragraph"
     tone: str | None = None
     length: str | None = None
-    missing_hint: str | None = None   # only used for add-detail
+    missing_hint: str | None = None  # legacy — the unified action uses `instruction`
+    instruction: str | None = None   # free-text: "make it more formal", "add screen names", etc.
 
 
 BLOCK_SYSTEM = (
@@ -205,14 +208,26 @@ def _build_block_prompt(req: BlockActionReq) -> str:
     tone = (req.tone or "").strip()
     length = (req.length or "").strip()
     hint = (req.missing_hint or "").strip()
-    if req.action == "rewrite":
+    instruction = (req.instruction or "").strip()
+    if req.action == "edit":
+        # Unified action — instruction drives the intent, tone and length
+        # shape the output.
+        parts = [
+            "Edit the following block. Return only the revised block, ready to drop back into the document.",
+        ]
+        if instruction: parts.append(f"Instruction: {instruction}")
+        if tone:        parts.append(f"Tone: {tone.lower()}.")
+        if length:      parts.append(f"Length: {length.lower()}.")
+        if not (instruction or tone or length):
+            parts.append("Improve clarity, grammar, and consistency without changing meaning.")
+    elif req.action == "rewrite":
         parts = ["Rewrite the following block."]
         if tone:   parts.append(f"Tone: {tone.lower()}.")
         if length: parts.append(f"Length: {length.lower()}.")
     elif req.action == "rephrase":
         parts = ["Rephrase the following block for readability, preserving the same content and structure."]
         if tone: parts.append(f"Tone: {tone.lower()}.")
-    else:  # add-detail
+    else:  # add-detail (legacy)
         parts = ["Extend the following block by adding useful, concrete detail. Keep the original text intact and add new sentences."]
         if length: parts.append(f"Add: {length}.")
         if tone:   parts.append(f"Tone: {tone.lower()}.")
@@ -232,7 +247,7 @@ def block_action(req: BlockActionReq):
                 {"role": "system", "content": BLOCK_SYSTEM},
                 {"role": "user",   "content": prompt},
             ],
-            max_tokens=(1400 if req.action == "add-detail" else 700),
+            max_tokens=(1400 if req.action in ("edit", "add-detail") else 700),
         )
     except Exception as e:
         raise HTTPException(502, f"LLM error: {e}") from e

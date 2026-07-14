@@ -1004,7 +1004,7 @@ export default function Editor({ uploadedDoc, onExit }) {
       return
     }
 
-    if (['rewrite', 'rephrase', 'add-detail'].includes(action)) {
+    if (action === 'edit') {
       // For multi, synthesize a combined "block" so the AI acts on one
       // consolidated snippet. On accept we overwrite the first block and
       // remove the rest — the reviewer's intent was to consolidate.
@@ -1481,14 +1481,14 @@ export default function Editor({ uploadedDoc, onExit }) {
           block={aiAction.block}
           onCancel={() => setAiAction(null)}
           onAccept={applyAiOutput}
-          onGenerate={async ({ action, tone, length, missingHint, block }) => {
+          onGenerate={async ({ action, tone, length, instruction, block }) => {
             return api.aiBlockAction({
-              action,
-              blockText: block?.text || '',
-              blockKind: block?.kind,
+              action:      action || 'edit',
+              blockText:   block?.text || '',
+              blockKind:   block?.kind,
               tone,
               length,
-              missingHint,
+              instruction,
             })
           }}
         />
